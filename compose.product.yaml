@@ -1,0 +1,136 @@
+# Overlay: docker compose --env-file <private-product-env> -f compose.yaml -f compose.product.yaml ...
+# A dedicated project is mandatory; existing native infrastructure is not reused or altered.
+name: ${PRODUCT_PROJECT:?Prepare a separate product project}
+
+x-product-app: &product-app
+  image: ${PRODUCT_PROJECT}-python:local
+  build:
+    context: .
+    dockerfile: infra/api.Dockerfile
+  restart: unless-stopped
+  read_only: true
+  tmpfs: [/tmp]
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  networks: [default]
+  environment: &product-environment
+    APP_ENV: local
+    EXTERNAL_PROVIDERS: fake
+    ACCOUNTING_ADAPTER: demo
+    EMAIL_ADAPTER: mock
+    VOICE_ADAPTER: mock
+    LLM_PROVIDER: fake
+    OUTBOUND_ENABLED: ${PRODUCT_SYNTHETIC_OUTBOUND_ENABLED:-false}
+    AUTOMATION_KILL_SWITCH: ${PRODUCT_SYNTHETIC_KILL_SWITCH:-true}
+    RECORDING_ENABLED: "false"
+    TRANSCRIPTION_ENABLED: "false"
+    DATABASE_URL: ${PRODUCT_DATABASE_URL:?Required private product database URL}
+    WEB_PUBLIC_URL: http://127.0.0.1:${PRODUCT_WEB_PORT:-53100}
+    OIDC_ISSUER: http://identity.aco.localhost:${PRODUCT_IDENTITY_PORT:-58180}/realms/aco
+    OIDC_DISCOVERY_URL: http://identity.aco.localhost:${PRODUCT_IDENTITY_PORT:-58180}/realms/aco/.well-known/openid-configuration
+    OIDC_CLIENT_ID: aco
+    OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:?Required private product client secret}
+    SESSION_SECRET: ${SESSION_SECRET:?Required private product session secret}
+    TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:?Required private product encryption key}
+    STORAGE_ENDPOINT: http://storage:8333
+    STORAGE_BUCKET: ${STORAGE_BUCKET:-aco-artifacts}
+    STORAGE_APP_ACCESS_KEY: ${STORAGE_APP_ACCESS_KEY:?Required distinct APP identity}
+    STORAGE_APP_SECRET_KEY: ${STORAGE_APP_SECRET_KEY:?Required distinct APP secret}
+    SYNTHETIC_EMAIL_ENABLED: ${SYNTHETIC_EMAIL_ENABLED:-false}
+    SYNTHETIC_VOICE_ENABLED: ${SYNTHETIC_VOICE_ENABLED:-false}
+    SYNTHETIC_EMAIL_INGRESS_ENABLED: ${SYNTHETIC_EMAIL_INGRESS_ENABLED:-false}
+    SYNTHETIC_EMAIL_INGRESS_WEBHOOK_SECRET: ${SYNTHETIC_EMAIL_INGRESS_WEBHOOK_SECRET:?Required synthetic-only secret}
+
+services:
+  local-ingress:
+    profiles: [native-only]
+  storage-core:
+    volumes: !override
+      - storage_data:/data
+      - type: bind
+        source: ${PRODUCT_STORAGE_CONFIG:?Required generated storage policy}
+        target: /run/aco/s3-identities.json
+        read_only: true
+        bind:
+          create_host_path: false
+  storage:
+    ports: !override []
+    networks: !override [default, storage_internal]
+  identity:
+    environment:
+      KC_HOSTNAME: http://identity.aco.localhost:${PRODUCT_IDENTITY_PORT:-58180}
+      KC_HOSTNAME_STRICT: "true"
+    volumes: !override
+      - identity_data:/opt/keycloak/data
+      - type: bind
+        source: ${PRODUCT_REALM_CONFIG:?Required product realm configuration}
+        target: /opt/keycloak/data/import/aco-realm.json
+        read_only: true
+        bind:
+          create_host_path: false
+  api:
+    <<: *product-app
+    command: [python, -m, aco.cli, api]
+    depends_on:
+      postgres: {condition: service_healthy}
+      storage: {condition: service_healthy}
+      identity: {condition: service_started}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/live', timeout=3)"]
+      interval: 5s
+      timeout: 4s
+      retries: 20
+  worker:
+    <<: *product-app
+    command: [python, -m, aco.worker]
+    depends_on:
+      postgres: {condition: service_healthy}
+      storage: {condition: service_healthy}
+  migrate:
+    <<: *product-app
+    profiles: [tools]
+    restart: "no"
+    command: [python, -m, aco.cli, migrate]
+    environment: !override
+      DATABASE_URL: ${PRODUCT_DATABASE_URL:?Required private product database URL}
+    depends_on:
+      postgres: {condition: service_healthy}
+  web:
+    image: ${PRODUCT_PROJECT}-web:local
+    build:
+      context: .
+      dockerfile: infra/web.Dockerfile
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp, /app/web/.next/cache]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    networks: [default]
+    environment:
+      ACO_API_INTERNAL_ORIGIN: http://api:8000
+    depends_on:
+      api: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 6s
+      retries: 25
+  product-ingress:
+    image: nginx:1.30.6-alpine@sha256:901e593c95dc85f5a729f5765516321366ef4ac401821431d408897e95287d0a
+    environment:
+      PRODUCT_IDENTITY_PORT: ${PRODUCT_IDENTITY_PORT:-58180}
+      NGINX_ENVSUBST_FILTER: ^PRODUCT_IDENTITY_PORT$$
+    ports:
+      - 127.0.0.1:${PRODUCT_WEB_PORT:-53100}:3000
+      - 127.0.0.1:${PRODUCT_API_PORT:-58100}:8000
+      - 127.0.0.1:${PRODUCT_IDENTITY_PORT:-58180}:${PRODUCT_IDENTITY_PORT:-58180}
+    volumes:
+      - ./infra/network/product-ingress.conf.template:/etc/nginx/templates/default.conf.template:ro
+    networks:
+      default:
+        aliases: [identity.aco.localhost]
+      ingress: {}
+    depends_on:
+      identity: {condition: service_started}
+      api: {condition: service_healthy}
+      web: {condition: service_started}

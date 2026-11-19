@@ -1,0 +1,125 @@
+name: aco
+services:
+  postgres:
+    image: postgres:17@sha256:0d938e975177bef9f1f61f3f9dbcf2e0aa0a139568f66d3415ed8892eb97f6ac
+    environment:
+      POSTGRES_USER: aco
+      POSTGRES_DB: aco
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aco -d aco"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  storage-core:
+    image: chrislusf/seaweedfs:4.54@sha256:4b42c212543a0acd4c0e675215ecdcaf62a186ef98def76c7e12701871222d15
+    command:
+      - mini
+      - -dir=/data
+      - -ip=storage-core
+      - -ip.bind=0.0.0.0
+      - -webdav=false
+      - -admin.ui=false
+      - -admin.port.legacy=0
+      - -master.telemetry=false
+      - -s3.port.iceberg=0
+      - -s3.port.lance=0
+      - -s3.iam=false
+      - -s3.config=/run/aco/s3-identities.json
+    environment:
+      AWS_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY:?Set STORAGE_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${STORAGE_SECRET_KEY:?Set STORAGE_SECRET_KEY}
+      STORAGE_APP_ACCESS_KEY: ${STORAGE_APP_ACCESS_KEY:?Set distinct STORAGE_APP_ACCESS_KEY}
+      STORAGE_APP_SECRET_KEY: ${STORAGE_APP_SECRET_KEY:?Set distinct STORAGE_APP_SECRET_KEY}
+      WEED_S3_SSE_KEK: ${STORAGE_SSE_KEK:?Set a persistent 64-hex-character STORAGE_SSE_KEK}
+    volumes:
+      - storage_data:/data
+      - type: bind
+        source: ./.tooling/storage/s3-identities.json
+        target: /run/aco/s3-identities.json
+        read_only: true
+        bind:
+          create_host_path: false
+    networks: [storage_internal]
+    healthcheck:
+      test: ["CMD-SHELL", "test $$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:8333/) = 403"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  storage:
+    image: nginx:1.30.6-alpine@sha256:901e593c95dc85f5a729f5765516321366ef4ac401821431d408897e95287d0a
+    environment:
+      S3_BUCKET: ${STORAGE_BUCKET:-aco-artifacts}
+      NGINX_ENVSUBST_FILTER: ^S3_BUCKET$$
+    ports:
+      - "127.0.0.1:59000:8333"
+    volumes:
+      - ./infra/storage/s3-proxy.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./infra/storage/s3-common.conf:/etc/nginx/s3-common.conf:ro
+    networks: [default, storage_internal, ingress]
+    depends_on:
+      storage-core:
+        condition: service_healthy
+        restart: true
+      storage-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "wget -S -O /dev/null http://127.0.0.1:8333/$$S3_BUCKET 2>&1 | grep -q 'HTTP/1.1 403'"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  storage-init:
+    image: chrislusf/seaweedfs:4.54@sha256:4b42c212543a0acd4c0e675215ecdcaf62a186ef98def76c7e12701871222d15
+    entrypoint: ["/bin/sh", "/storage/init.sh"]
+    environment:
+      AWS_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY:?Set STORAGE_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${STORAGE_SECRET_KEY:?Set STORAGE_SECRET_KEY}
+      S3_BUCKET: ${STORAGE_BUCKET:-aco-artifacts}
+    volumes:
+      - ./infra/storage:/storage:ro
+    networks: [storage_internal]
+    depends_on:
+      storage-core:
+        condition: service_healthy
+  local-ingress:
+    image: nginx:1.30.6-alpine@sha256:901e593c95dc85f5a729f5765516321366ef4ac401821431d408897e95287d0a
+    ports:
+      - "127.0.0.1:55432:55432"
+      - "127.0.0.1:58080:58080"
+    volumes:
+      - ./infra/network/local-ingress.conf:/etc/nginx/nginx.conf:ro
+    networks: [default, ingress]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      identity:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 55432 && wget -q -O /dev/null http://127.0.0.1:58080/realms/aco/.well-known/openid-configuration"]
+      interval: 2s
+      timeout: 3s
+      retries: 45
+  identity:
+    image: quay.io/keycloak/keycloak:26.8.2@sha256:c68e286cacd87b942ac1939a0a1481461109d6acd3a57dc496969a319a76bbf0
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:?Set KEYCLOAK_ADMIN_USER}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD}
+      ACO_OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:?Set OIDC_CLIENT_SECRET}
+      ACO_DEMO_PASSWORD: ${DEMO_PASSWORD:?Set DEMO_PASSWORD}
+      KC_HTTP_PORT: "8080"
+    volumes:
+      - identity_data:/opt/keycloak/data
+      - ./infra/identity/realm.json:/opt/keycloak/data/import/aco-realm.json:ro
+volumes:
+  identity_data:
+  postgres_data:
+  storage_data:
+networks:
+  default:
+    internal: true
+  storage_internal:
+    internal: true
+  ingress:

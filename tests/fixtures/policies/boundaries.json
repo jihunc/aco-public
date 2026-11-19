@@ -1,0 +1,3873 @@
+{
+  "schema_version": 1,
+  "spec_version": "1.8",
+  "algorithm_version": "aco_cash_v1",
+  "purpose": "Deterministic synthetic boundary inputs and expected outputs for later real policy/domain tests; this fixture is not evidence that those tests or application behavior have executed. ACO_SPEC.md remains authoritative.",
+  "sections": [
+    "3",
+    "4",
+    "5",
+    "6.5",
+    "12.3.5",
+    "12.3.6",
+    "12.5",
+    "12.7",
+    "12.8",
+    "12.13",
+    "12.14.7"
+  ],
+  "execution_lane": "offline",
+  "case_contract": {
+    "id": "stable regression name",
+    "domain": "target use-case family",
+    "requirements": "applicable stable acceptance IDs",
+    "input": "scenario-specific fields overlay domain baseline",
+    "expected": "Every key is a mandatory observable assertion against actual production domain/API/DB behavior, never an echoed expected object; actual consumer groups are exhaustively mapped in the release verification traceability fixture."
+  },
+  "domain_baselines": {
+    "contact": {
+      "recipient_timezone": "Australia/Melbourne",
+      "customer": "C1",
+      "normalized_destination": "recipient@example.test",
+      "otherwise_eligible": true,
+      "rolling_24h_limit": 1,
+      "rolling_7d_limit": 3,
+      "counted_outcomes": [
+        "accepted",
+        "connected",
+        "unknown_outcome",
+        "in_flight"
+      ]
+    },
+    "schedule": {
+      "weekdays": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "opens": "09:00:00",
+      "closes_exclusive": "17:00:00",
+      "jurisdiction_or_holiday_clearance_claim": false
+    },
+    "freshness": {
+      "max_source_age_seconds": 900,
+      "positive_outstanding_balance": true,
+      "other_guards_pass": true
+    },
+    "approval": {
+      "configured_ttl_seconds": 86400,
+      "used": false,
+      "other_guards_pass": true
+    },
+    "finance": {
+      "algorithm_version": "aco_cash_v1",
+      "amount_unit": "minor_units",
+      "interval": "[D,H)",
+      "complete_source_history": true,
+      "unknown_allocation_fallback": false,
+      "approved_fx_policy": null
+    },
+    "budget": {
+      "real_external_enabled": false,
+      "real_spend_cap": "0",
+      "real_request_cap": 0
+    },
+    "artifact": {
+      "private": true,
+      "public_read": false,
+      "authenticated_proxy": true,
+      "internal_signed_url_ttl_seconds_max": 60
+    },
+    "retention": {
+      "synthetic_retention_days": 30,
+      "purge_deadline_seconds": 86400
+    },
+    "ticket": {
+      "ttl_seconds": 60,
+      "one_use": true,
+      "otherwise_eligible": true,
+      "final_authoritative_source_verification_required": true
+    },
+    "promise": {
+      "invoice": "I101",
+      "currency": "AUD",
+      "recipient_timezone": "Australia/Melbourne",
+      "confirmed_at": "2026-11-17T00:00:00Z",
+      "cutoff": "2026-11-20T13:00:00Z",
+      "as_of": "2026-11-20T13:00:01Z",
+      "amount_minor_units": 10000,
+      "source_fresh": true,
+      "source_evidence_synthetic": true,
+      "prior_other_holds": [],
+      "input_overrides_baseline": true
+    }
+  },
+  "cases": [
+    {
+      "id": "contact_24h_lower_boundary_released",
+      "domain": "contact",
+      "requirements": [
+        "AC-04",
+        "AC-12",
+        "AC-19",
+        "AT-05"
+      ],
+      "input": {
+        "now": "2026-11-17T00:00:00Z",
+        "attempts": [
+          {
+            "at": "2026-11-16T00:00:00Z",
+            "channel": "email",
+            "outcome": "accepted"
+          }
+        ]
+      },
+      "expected": {
+        "allowed": true,
+        "count_24h": 0,
+        "count_7d": 1
+      }
+    },
+    {
+      "id": "contact_24h_one_second_inside_blocked",
+      "domain": "contact",
+      "requirements": [
+        "AC-12",
+        "AT-05"
+      ],
+      "input": {
+        "now": "2026-11-17T00:00:00Z",
+        "attempts": [
+          {
+            "at": "2026-11-16T00:00:01Z",
+            "channel": "voice",
+            "outcome": "unknown_outcome"
+          }
+        ]
+      },
+      "expected": {
+        "allowed": false,
+        "reason": "customer_contact_cap",
+        "count_24h": 1
+      }
+    },
+    {
+      "id": "contact_7d_lower_boundary_released",
+      "domain": "contact",
+      "requirements": [
+        "AC-12",
+        "AT-05"
+      ],
+      "input": {
+        "now": "2026-11-17T00:00:00Z",
+        "attempts": [
+          {
+            "at": "2026-11-10T00:00:00Z",
+            "channel": "email",
+            "outcome": "accepted"
+          },
+          {
+            "at": "2026-11-12T00:00:00Z",
+            "channel": "email",
+            "outcome": "accepted"
+          },
+          {
+            "at": "2026-11-14T00:00:00Z",
+            "channel": "email",
+            "outcome": "accepted"
+          }
+        ]
+      },
+      "expected": {
+        "allowed": true,
+        "count_7d": 2
+      }
+    },
+    {
+      "id": "contact_7d_three_attempts_blocked",
+      "domain": "contact",
+      "requirements": [
+        "AC-12",
+        "AT-05"
+      ],
+      "input": {
+        "now": "2026-11-17T00:00:00Z",
+        "attempts": [
+          {
+            "at": "2026-11-10T00:00:01Z",
+            "channel": "voice",
+            "outcome": "accepted"
+          },
+          {
+            "at": "2026-11-12T00:00:00Z",
+            "channel": "email",
+            "outcome": "accepted"
+          },
+          {
+            "at": "2026-11-14T00:00:00Z",
+            "channel": "voice",
+            "outcome": "accepted"
+          }
+        ]
+      },
+      "expected": {
+        "allowed": false,
+        "reason": "customer_contact_cap",
+        "count_7d": 3
+      }
+    },
+    {
+      "id": "contact_inflight_reserves_cross_invoice_channel",
+      "domain": "contact",
+      "requirements": [
+        "AC-12",
+        "AC-19"
+      ],
+      "input": {
+        "customer": "C1",
+        "normalized_destination": "recipient@example.test",
+        "concurrent_proposals": [
+          {
+            "invoice": "I1",
+            "channel": "email"
+          },
+          {
+            "invoice": "I2",
+            "channel": "voice"
+          }
+        ]
+      },
+      "expected": {
+        "accepted_reservations": 1,
+        "rejected_reservations": 1,
+        "provider_submissions_max": 1
+      }
+    },
+    {
+      "id": "contact_destination_shared_across_customer_records",
+      "domain": "contact",
+      "requirements": [
+        "AC-12"
+      ],
+      "input": {
+        "now": "2026-11-17T00:00:00Z",
+        "customer": "C2",
+        "normalized_destination": "recipient@example.test",
+        "attempts": [
+          {
+            "customer": "C1",
+            "normalized_destination": "recipient@example.test",
+            "at": "2026-11-16T23:00:00Z",
+            "channel": "email",
+            "outcome": "accepted"
+          }
+        ]
+      },
+      "expected": {
+        "allowed": false,
+        "reason": "recipient_contact_cap"
+      }
+    },
+    {
+      "id": "opens_at_0900",
+      "domain": "schedule",
+      "requirements": [
+        "AC-12",
+        "AT-05"
+      ],
+      "input": {
+        "recipient_timezone": "Australia/Melbourne",
+        "local_datetime": "2026-11-17T09:00:00"
+      },
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "id": "before_0900",
+      "domain": "schedule",
+      "requirements": [
+        "AC-12",
+        "AT-05"
+      ],
+      "input": {
+        "recipient_timezone": "Australia/Melbourne",
+        "local_datetime": "2026-11-17T08:59:59"
+      },
+      "expected": {
+        "allowed": false
+      }
+    },
+    {
+      "id": "last_second_before_close",
+      "domain": "schedule",
+      "requirements": [
+        "AC-12",
+        "AT-05"
+      ],
+      "input": {
+        "recipient_timezone": "Australia/Melbourne",
+        "local_datetime": "2026-11-17T16:59:59"
+      },
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "id": "closes_at_1700",
+      "domain": "schedule",
+      "requirements": [
+        "AC-12",
+        "AT-05"
+      ],
+      "input": {
+        "recipient_timezone": "Australia/Melbourne",
+        "local_datetime": "2026-11-17T17:00:00"
+      },
+      "expected": {
+        "allowed": false
+      }
+    },
+    {
+      "id": "weekend_blocked",
+      "domain": "schedule",
+      "requirements": [
+        "AC-12",
+        "AT-05"
+      ],
+      "input": {
+        "recipient_timezone": "Australia/Melbourne",
+        "local_datetime": "2026-11-21T10:00:00"
+      },
+      "expected": {
+        "allowed": false
+      }
+    },
+    {
+      "id": "recipient_timezone_unknown_blocks",
+      "domain": "schedule",
+      "requirements": [
+        "AC-12"
+      ],
+      "input": {
+        "recipient_timezone": null,
+        "tenant_timezone": "Australia/Melbourne",
+        "owner_confirmed_recipient_uses_tenant_timezone": false
+      },
+      "expected": {
+        "allowed": false,
+        "reason": "timezone_review"
+      }
+    },
+    {
+      "id": "dst_nonexistent_deferred_to_permitted_window",
+      "domain": "schedule",
+      "requirements": [
+        "AC-12"
+      ],
+      "input": {
+        "recipient_timezone": "Australia/Melbourne",
+        "calendar_candidate": "2026-10-04T02:30:00"
+      },
+      "expected": {
+        "next_local_datetime": "2026-10-05T09:00:00+11:00",
+        "next_utc": "2026-10-04T22:00:00Z"
+      }
+    },
+    {
+      "id": "dst_ambiguous_deferred_to_permitted_window",
+      "domain": "schedule",
+      "requirements": [
+        "AC-12"
+      ],
+      "input": {
+        "recipient_timezone": "Australia/Melbourne",
+        "calendar_candidate": "2026-04-05T02:30:00"
+      },
+      "expected": {
+        "next_local_datetime": "2026-04-06T09:00:00+10:00",
+        "next_utc": "2026-04-05T23:00:00Z"
+      }
+    },
+    {
+      "id": "freshness_age_0",
+      "domain": "freshness",
+      "requirements": [
+        "AC-12",
+        "AC-25",
+        "AT-05"
+      ],
+      "input": {
+        "source_age_seconds": 0,
+        "verified_in_current_dispatch_attempt": true,
+        "source_read_succeeded": true
+      },
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "id": "freshness_age_900",
+      "domain": "freshness",
+      "requirements": [
+        "AC-12",
+        "AC-25",
+        "AT-05"
+      ],
+      "input": {
+        "source_age_seconds": 900,
+        "verified_in_current_dispatch_attempt": true,
+        "source_read_succeeded": true
+      },
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "id": "freshness_age_901",
+      "domain": "freshness",
+      "requirements": [
+        "AC-12",
+        "AC-25",
+        "AT-05"
+      ],
+      "input": {
+        "source_age_seconds": 901,
+        "verified_in_current_dispatch_attempt": true,
+        "source_read_succeeded": true
+      },
+      "expected": {
+        "allowed": false
+      }
+    },
+    {
+      "id": "freshness_age_minus_1",
+      "domain": "freshness",
+      "requirements": [
+        "AC-12",
+        "AC-25",
+        "AT-05"
+      ],
+      "input": {
+        "source_age_seconds": -1,
+        "verified_in_current_dispatch_attempt": true,
+        "source_read_succeeded": true
+      },
+      "expected": {
+        "allowed": false
+      }
+    },
+    {
+      "id": "fresh_snapshot_without_immediate_verification_blocked",
+      "domain": "freshness",
+      "requirements": [
+        "AC-12",
+        "AT-05"
+      ],
+      "input": {
+        "source_age_seconds": 1,
+        "verified_in_current_dispatch_attempt": false,
+        "source_read_succeeded": true
+      },
+      "expected": {
+        "allowed": false,
+        "reason": "source_not_reverified"
+      }
+    },
+    {
+      "id": "unavailable_source_blocked",
+      "domain": "freshness",
+      "requirements": [
+        "AC-12"
+      ],
+      "input": {
+        "source_age_seconds": null,
+        "verified_in_current_dispatch_attempt": true,
+        "source_read_succeeded": false
+      },
+      "expected": {
+        "allowed": false,
+        "reason": "STALE_ACCOUNTING_DATA"
+      }
+    },
+    {
+      "id": "approval_elapsed_86399",
+      "domain": "approval",
+      "requirements": [
+        "AC-12",
+        "AT-13"
+      ],
+      "input": {
+        "seconds_since_grant": 86399,
+        "configured_ttl_seconds": 86400,
+        "material_change": false,
+        "proposer": "U1",
+        "approver": "U2",
+        "approver_role": "finance_manager"
+      },
+      "expected": {
+        "approval_valid": true
+      }
+    },
+    {
+      "id": "approval_elapsed_86400",
+      "domain": "approval",
+      "requirements": [
+        "AC-12",
+        "AT-13"
+      ],
+      "input": {
+        "seconds_since_grant": 86400,
+        "configured_ttl_seconds": 86400,
+        "material_change": false,
+        "proposer": "U1",
+        "approver": "U2",
+        "approver_role": "finance_manager"
+      },
+      "expected": {
+        "approval_valid": false
+      }
+    },
+    {
+      "id": "approval_elapsed_86401",
+      "domain": "approval",
+      "requirements": [
+        "AC-12",
+        "AT-13"
+      ],
+      "input": {
+        "seconds_since_grant": 86401,
+        "configured_ttl_seconds": 86400,
+        "material_change": false,
+        "proposer": "U1",
+        "approver": "U2",
+        "approver_role": "finance_manager"
+      },
+      "expected": {
+        "approval_valid": false
+      }
+    },
+    {
+      "id": "approval_material_edit_invalidates",
+      "domain": "approval",
+      "requirements": [
+        "AT-13"
+      ],
+      "input": {
+        "seconds_since_grant": 1,
+        "material_change": "recipient",
+        "proposer": "U1",
+        "approver": "U2"
+      },
+      "expected": {
+        "approval_valid": false,
+        "new_approval_required": true
+      }
+    },
+    {
+      "id": "approval_high_risk_self_approval_blocked",
+      "domain": "approval",
+      "requirements": [
+        "AC-12",
+        "AT-13"
+      ],
+      "input": {
+        "action": "real_external_email",
+        "proposer": "U1",
+        "approver": "U1",
+        "approver_role": "owner"
+      },
+      "expected": {
+        "approval_valid": false,
+        "reason": "self_approval_prohibited"
+      }
+    },
+    {
+      "id": "operator_cannot_approve_external",
+      "domain": "authorization",
+      "requirements": [
+        "AC-17",
+        "AT-13",
+        "AT-15"
+      ],
+      "input": {
+        "role": "operator",
+        "permission": "approve_external"
+      },
+      "expected": {
+        "allowed": false,
+        "http_status": 403
+      }
+    },
+    {
+      "id": "owner_not_system_authority",
+      "domain": "authorization",
+      "requirements": [
+        "AC-17",
+        "AT-15"
+      ],
+      "input": {
+        "role": "owner",
+        "permission": "global_pause",
+        "system_authority": false
+      },
+      "expected": {
+        "allowed": false,
+        "http_status": 403
+      }
+    },
+    {
+      "id": "viewer_can_read_authorized_not_write",
+      "domain": "authorization",
+      "requirements": [
+        "AC-17",
+        "AT-15"
+      ],
+      "input": {
+        "role": "viewer",
+        "same_tenant": true,
+        "operations": [
+          "invoice_read",
+          "task_write"
+        ]
+      },
+      "expected": {
+        "allowed": [
+          true,
+          false
+        ]
+      }
+    },
+    {
+      "id": "archive_active_without_safe_transition_rejected",
+      "domain": "policy_archive",
+      "requirements": [
+        "AC-03",
+        "AT-01"
+      ],
+      "input": {
+        "active": true,
+        "replacement_validated": false,
+        "suspend_automation": false
+      },
+      "expected": {
+        "archived": false,
+        "historical_versions_deleted": 0
+      }
+    },
+    {
+      "id": "archive_with_suspend_retains_history",
+      "domain": "policy_archive",
+      "requirements": [
+        "AC-03",
+        "AT-01"
+      ],
+      "input": {
+        "active": true,
+        "replacement_validated": false,
+        "suspend_automation": true
+      },
+      "expected": {
+        "archived": true,
+        "automation_enabled": false,
+        "unsent_actions": "cancelled",
+        "historical_versions_deleted": 0
+      }
+    },
+    {
+      "id": "archive_with_replacement_recomputes",
+      "domain": "policy_archive",
+      "requirements": [
+        "AC-03",
+        "AT-01"
+      ],
+      "input": {
+        "active": true,
+        "replacement_validated": true,
+        "replacement_policy_version": 4,
+        "suspend_automation": false
+      },
+      "expected": {
+        "archived": true,
+        "future_policy_version": 4,
+        "future_actions": "recomputed",
+        "historical_sends": "unchanged"
+      }
+    },
+    {
+      "id": "hold_expiry_does_not_release_dispute",
+      "domain": "holds",
+      "requirements": [
+        "AC-09",
+        "AC-11",
+        "AC-12"
+      ],
+      "input": {
+        "hold_reasons": [
+          "active_promise",
+          "active_dispute"
+        ],
+        "expired_reasons": [
+          "active_promise"
+        ]
+      },
+      "expected": {
+        "hold_reasons": [
+          "active_dispute"
+        ],
+        "outbound_allowed": false,
+        "backlog_sends": 0
+      }
+    },
+    {
+      "id": "promise_unknown_allocation_needs_confirmation",
+      "domain": "promise",
+      "requirements": [
+        "AC-09",
+        "AT-10"
+      ],
+      "input": {
+        "evidence": "I will pay AUD 100 across INV-101 and INV-102 on 2026-11-20.",
+        "invoice_ids": [
+          "I101",
+          "I102"
+        ],
+        "currency": "AUD",
+        "total_minor_units": 10000,
+        "allocations": null,
+        "promised_date": "2026-11-20",
+        "recipient_timezone": "Australia/Melbourne"
+      },
+      "expected": {
+        "status": "NEEDS_CONFIRMATION",
+        "allocations": null,
+        "hold_invoice_ids": [
+          "I101",
+          "I102"
+        ],
+        "hold_reason": "promise_confirmation",
+        "review_due_seconds": 86400
+      }
+    },
+    {
+      "id": "promise_unknown_scope_blocks_review_without_invented_links",
+      "domain": "promise",
+      "requirements": [
+        "AC-09",
+        "AT-10"
+      ],
+      "input": {
+        "evidence": "I will pay everything soon.",
+        "invoice_ids": null,
+        "amount": null,
+        "promised_date": null
+      },
+      "expected": {
+        "status": "NEEDS_CONFIRMATION",
+        "invoice_allocations": [],
+        "promise_hold_invoice_ids": [],
+        "customer_block": "scope_review",
+        "review_due_seconds": 86400,
+        "auto_release_after_deadline": false
+      }
+    },
+    {
+      "id": "promise_relative_date_missing_timezone",
+      "domain": "promise",
+      "requirements": [
+        "AT-10"
+      ],
+      "input": {
+        "evidence": "Next Friday.",
+        "source_at": "2026-11-17T00:00:00Z",
+        "recipient_timezone": null,
+        "invoice_ids": [
+          "I101"
+        ]
+      },
+      "expected": {
+        "status": "NEEDS_CONFIRMATION",
+        "hold_invoice_ids": [
+          "I101"
+        ],
+        "invented_date": false
+      }
+    },
+    {
+      "id": "promise_end_of_date_cutoff",
+      "domain": "promise",
+      "requirements": [
+        "AC-09",
+        "AC-11",
+        "AT-10"
+      ],
+      "input": {
+        "promised_date": "2026-11-20",
+        "recipient_timezone": "Australia/Melbourne",
+        "now": "2026-11-20T13:00:00Z",
+        "amount_minor_units": 10000,
+        "verified_cash_minor_units": 0,
+        "source_fresh": true
+      },
+      "expected": {
+        "cutoff_utc": "2026-11-20T13:00:00Z",
+        "status": "MISSED",
+        "grace_seconds": 0,
+        "backlog_sends": 0
+      }
+    },
+    {
+      "id": "promise_partial_instalment_not_fulfilled",
+      "domain": "promise",
+      "requirements": [
+        "AT-10"
+      ],
+      "input": {
+        "amount_minor_units": 10000,
+        "verified_cash_minor_units": 4000,
+        "cutoff_elapsed": true,
+        "source_fresh": true
+      },
+      "expected": {
+        "status": "MISSED",
+        "performance_minor_units": 4000,
+        "fulfilled": false
+      }
+    },
+    {
+      "id": "promise_stale_at_cutoff_keeps_verification_hold",
+      "domain": "promise",
+      "requirements": [
+        "AC-11",
+        "AC-12"
+      ],
+      "input": {
+        "cutoff_elapsed": true,
+        "verified_cash_minor_units": 0,
+        "source_fresh": false
+      },
+      "expected": {
+        "status": "ACTIVE",
+        "hold_reason": "promise_verification",
+        "outbound_allowed": false,
+        "claim_missed": false
+      }
+    },
+    {
+      "id": "promise_replacement_requires_confirmation",
+      "domain": "promise",
+      "requirements": [
+        "AT-10"
+      ],
+      "input": {
+        "prior_status": "ACTIVE",
+        "new_statement_ambiguous": true
+      },
+      "expected": {
+        "prior_status": "ACTIVE",
+        "new_status": "NEEDS_CONFIRMATION",
+        "prior_history_deleted": false
+      }
+    },
+    {
+      "id": "promise_source_allocation_not_reused",
+      "domain": "promise",
+      "requirements": [
+        "AT-10"
+      ],
+      "input": {
+        "promises": [
+          {
+            "id": "P1",
+            "invoice": "I1",
+            "amount_minor_units": 10000
+          },
+          {
+            "id": "P2",
+            "invoice": "I1",
+            "amount_minor_units": 10000
+          }
+        ],
+        "verified_allocations": [
+          {
+            "id": "A1",
+            "invoice": "I1",
+            "minor_units": 10000
+          }
+        ]
+      },
+      "expected": {
+        "fulfilled_promises_max": 1,
+        "invented_allocations": 0
+      }
+    },
+    {
+      "id": "case_payment_does_not_resolve_dispute",
+      "domain": "case",
+      "requirements": [
+        "AC-10",
+        "AT-11",
+        "BI-06"
+      ],
+      "input": {
+        "issue_type": "wrong_amount",
+        "invoice_source_paid": true,
+        "issue_disposition_evidence": false
+      },
+      "expected": {
+        "collection_lifecycle": "closed",
+        "case_resolved": false
+      }
+    },
+    {
+      "id": "case_multi_invoice_partial_resolution",
+      "domain": "case",
+      "requirements": [
+        "AC-06",
+        "AT-07",
+        "BI-06"
+      ],
+      "input": {
+        "links": [
+          {
+            "invoice": "I1",
+            "issue_resolved": true
+          },
+          {
+            "invoice": "I2",
+            "issue_resolved": false
+          }
+        ]
+      },
+      "expected": {
+        "case_resolved": false,
+        "resolved_link_ids": [
+          "I1"
+        ]
+      }
+    },
+    {
+      "id": "case_approval_only_not_substantive",
+      "domain": "case",
+      "requirements": [
+        "BI-06",
+        "BI-07",
+        "BT-04"
+      ],
+      "input": {
+        "issue_evidence_verified": true,
+        "all_links_resolved": true,
+        "human_events": [
+          "approve_unchanged_proposal"
+        ]
+      },
+      "expected": {
+        "resolved": true,
+        "substantive_human_handling": false,
+        "autonomous_resolution": true
+      }
+    },
+    {
+      "id": "case_material_approval_edit_is_substantive",
+      "domain": "case",
+      "requirements": [
+        "BI-06",
+        "BI-07",
+        "BT-04"
+      ],
+      "input": {
+        "issue_evidence_verified": true,
+        "all_links_resolved": true,
+        "human_events": [
+          "edit_resolution_content",
+          "approve_proposal"
+        ]
+      },
+      "expected": {
+        "resolved": true,
+        "substantive_human_handling": true,
+        "autonomous_resolution": false
+      }
+    },
+    {
+      "id": "case_administrative_closure_not_resolution",
+      "domain": "case",
+      "requirements": [
+        "BI-06",
+        "BI-10",
+        "BT-04"
+      ],
+      "input": {
+        "state": "CLOSED",
+        "closure_reason": "duplicate_linked",
+        "surviving_case": "C1"
+      },
+      "expected": {
+        "resolved_kpi_count": 0,
+        "autonomous_resolved_count": 0
+      }
+    },
+    {
+      "id": "case_reopen_retains_original_clock",
+      "domain": "case",
+      "requirements": [
+        "BI-06",
+        "BI-10",
+        "BT-04"
+      ],
+      "input": {
+        "opened_at": "2026-11-01T00:00:00Z",
+        "prior_resolved_at": "2026-11-02T00:00:00Z",
+        "reopened_at": "2026-11-03T00:00:00Z",
+        "latest_resolved_at": "2026-11-05T00:00:00Z",
+        "human_events": [
+          "investigate_before_reopen"
+        ]
+      },
+      "expected": {
+        "resolution_seconds": 345600,
+        "autonomous_resolution": false,
+        "history_episodes": 2
+      }
+    },
+    {
+      "id": "case_reopened_unresolved_backlog",
+      "domain": "case",
+      "requirements": [
+        "BI-06",
+        "BI-10"
+      ],
+      "input": {
+        "state": "INVESTIGATING",
+        "prior_resolved": true,
+        "reopened": true
+      },
+      "expected": {
+        "current_resolved_kpi_count": 0,
+        "backlog_count": 1,
+        "prior_snapshots_preserved": true
+      }
+    },
+    {
+      "id": "cohort_includes_D_excludes_H",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BI-02",
+        "BT-01",
+        "BT-02"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "opening_exposure_minor_units": 10000,
+        "as_of": "2026-09-01T00:00:00Z",
+        "allocations": [
+          {
+            "id": "A1",
+            "at": "2026-07-31T14:00:00Z",
+            "minor_units": 2500
+          },
+          {
+            "id": "A2",
+            "at": "2026-08-30T13:59:59Z",
+            "minor_units": 2500
+          },
+          {
+            "id": "A3",
+            "at": "2026-08-30T14:00:00Z",
+            "minor_units": 5000
+          }
+        ],
+        "source_outstanding_before_H_minor_units": 5000,
+        "source_outstanding_as_of_minor_units": 0,
+        "noncash_settlement": false
+      },
+      "expected": {
+        "D": "2026-07-31T14:00:00Z",
+        "H": "2026-08-30T14:00:00Z",
+        "recovery_numerator_minor_units": 5000,
+        "recovery_denominator_minor_units": 10000,
+        "paid_in_full_count": 0
+      }
+    },
+    {
+      "id": "cohort_partial_prepayment_reduces_opening",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BI-02",
+        "BT-01"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "opening_exposure_minor_units": 8000,
+        "as_of": "2026-09-01T00:00:00Z",
+        "pre_D_cash_minor_units": 2000,
+        "horizon_cash_minor_units": 8000,
+        "source_outstanding_before_H_minor_units": 0,
+        "source_outstanding_as_of_minor_units": 0,
+        "noncash_settlement": false
+      },
+      "expected": {
+        "recovery_numerator_minor_units": 8000,
+        "recovery_denominator_minor_units": 8000,
+        "paid_in_full_count": 1
+      }
+    },
+    {
+      "id": "cohort_fully_prepaid_excluded",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BI-02",
+        "BT-02"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "opening_exposure_minor_units": 0,
+        "as_of": "2026-09-01T00:00:00Z",
+        "pre_D_cash_minor_units": 10000
+      },
+      "expected": {
+        "eligible": false,
+        "exclusion_reason": "nonpositive_opening_exposure",
+        "value": null
+      }
+    },
+    {
+      "id": "cohort_negative_exposure_excluded",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BT-02"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "opening_exposure_minor_units": -100,
+        "as_of": "2026-09-01T00:00:00Z"
+      },
+      "expected": {
+        "eligible": false,
+        "value": null
+      }
+    },
+    {
+      "id": "cohort_post_opening_credit_not_cash",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BI-02",
+        "BT-02"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "opening_exposure_minor_units": 10000,
+        "as_of": "2026-09-01T00:00:00Z",
+        "horizon_cash_minor_units": 4000,
+        "post_D_credit_minor_units": 6000,
+        "source_outstanding_minor_units": 0,
+        "source_outstanding_before_H_minor_units": 0,
+        "source_outstanding_as_of_minor_units": 0,
+        "noncash_settlement": true
+      },
+      "expected": {
+        "recovery_numerator_minor_units": 4000,
+        "recovery_denominator_minor_units": 10000,
+        "paid_in_full_count": 0,
+        "credit_minor_units": 6000
+      }
+    },
+    {
+      "id": "cohort_writeoff_not_cash",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BI-02",
+        "BT-02"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "opening_exposure_minor_units": 10000,
+        "as_of": "2026-09-01T00:00:00Z",
+        "horizon_cash_minor_units": 0,
+        "post_D_writeoff_minor_units": 10000,
+        "source_outstanding_minor_units": 0,
+        "source_outstanding_before_H_minor_units": 0,
+        "source_outstanding_as_of_minor_units": 0,
+        "noncash_settlement": true
+      },
+      "expected": {
+        "recovery_numerator_minor_units": 0,
+        "recovery_denominator_minor_units": 10000,
+        "paid_in_full_count": 0
+      }
+    },
+    {
+      "id": "cohort_overpayment_capped",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BT-02"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "opening_exposure_minor_units": 10000,
+        "as_of": "2026-09-01T00:00:00Z",
+        "horizon_cash_minor_units": 12000,
+        "source_outstanding_before_H_minor_units": 0,
+        "source_outstanding_as_of_minor_units": 0,
+        "noncash_settlement": false
+      },
+      "expected": {
+        "uncapped_net_minor_units": 12000,
+        "recovery_numerator_minor_units": 10000,
+        "paid_in_full_count": 1
+      }
+    },
+    {
+      "id": "cohort_post_horizon_reversal_reduces_asof",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BI-02",
+        "BI-05",
+        "BT-02"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "opening_exposure_minor_units": 10000,
+        "as_of": "2026-09-01T00:00:00Z",
+        "horizon_allocations": [
+          {
+            "id": "A1",
+            "minor_units": 10000
+          }
+        ],
+        "linked_reversals": [
+          {
+            "allocation": "A1",
+            "at": "2026-08-31T00:00:00Z",
+            "minor_units": 3000
+          }
+        ],
+        "source_outstanding_before_H_minor_units": 0,
+        "source_outstanding_as_of_minor_units": 3000,
+        "noncash_settlement": false
+      },
+      "expected": {
+        "recovery_numerator_minor_units": 7000,
+        "paid_in_full_count": 0,
+        "reversal_reporting_period": "2026-08-31",
+        "prior_snapshot_rewritten": false,
+        "result_version_increment": 1,
+        "label": "RESTATED",
+        "prior_result_preserved": true
+      }
+    },
+    {
+      "id": "cohort_linked_refund_reduces_cash",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BI-02",
+        "BI-05",
+        "BT-02"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "opening_exposure_minor_units": 10000,
+        "as_of": "2026-09-01T00:00:00Z",
+        "horizon_allocations": [
+          {
+            "id": "A1",
+            "minor_units": 10000
+          }
+        ],
+        "linked_refunds": [
+          {
+            "allocation": "A1",
+            "at": "2026-08-31T00:00:00Z",
+            "minor_units": 1000
+          }
+        ],
+        "source_outstanding_before_H_minor_units": 0,
+        "source_outstanding_as_of_minor_units": 1000,
+        "noncash_settlement": false
+      },
+      "expected": {
+        "recovery_numerator_minor_units": 9000,
+        "paid_in_full_count": 0,
+        "refunds_minor_units": 1000,
+        "result_version_increment": 1,
+        "label": "RESTATED",
+        "prior_result_preserved": true
+      }
+    },
+    {
+      "id": "cohort_unallocated_refund_unavailable",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BI-05",
+        "BT-02"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "opening_exposure_minor_units": 10000,
+        "as_of": "2026-09-01T00:00:00Z",
+        "refund_minor_units": 1000,
+        "refund_allocation": null,
+        "could_affect_cohort": true
+      },
+      "expected": {
+        "value": null,
+        "status": "allocation_review",
+        "invented_allocation": false
+      }
+    },
+    {
+      "id": "cohort_due_date_correction_versioned",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BT-01",
+        "BT-02"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "opening_exposure_minor_units": 10000,
+        "as_of": "2026-09-01T00:00:00Z",
+        "cohort_version": "V1",
+        "new_source_due_date": "2026-09-01",
+        "restatement_approved": false
+      },
+      "expected": {
+        "membership_version": "V1",
+        "membership_due_date": "2026-08-01",
+        "denominator_minor_units": 10000,
+        "new_source_history_retained": true
+      }
+    },
+    {
+      "id": "cohort_restated_version_preserves_prior",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BT-01",
+        "BT-07"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "opening_exposure_minor_units": 10000,
+        "as_of": "2026-09-01T00:00:00Z",
+        "cohort_version": "V1",
+        "new_source_due_date": "2026-09-01",
+        "restatement_approved": true
+      },
+      "expected": {
+        "new_version_required": true,
+        "prior_version_preserved": true,
+        "label": "RESTATED"
+      }
+    },
+    {
+      "id": "cohort_immature_not_complete",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BT-01"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "opening_exposure_minor_units": 10000,
+        "as_of": "2026-08-30T13:59:59Z"
+      },
+      "expected": {
+        "mature": false,
+        "label": "INCOMPLETE",
+        "primary_comparison_allowed": false
+      }
+    },
+    {
+      "id": "cohort_missing_opening_history_not_original_amount",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BT-01"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "opening_exposure_minor_units": null,
+        "as_of": "2026-09-01T00:00:00Z",
+        "history_complete": false
+      },
+      "expected": {
+        "value": null,
+        "label": "INCOMPLETE",
+        "fallback_to_original_amount": false
+      }
+    },
+    {
+      "id": "cohort_dst_30_calendar_days",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BT-01"
+      ],
+      "input": {
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-10-01",
+        "calendar_horizon_days": 30
+      },
+      "expected": {
+        "D": "2026-09-30T14:00:00Z",
+        "H": "2026-10-30T13:00:00Z",
+        "elapsed_hours": 719
+      }
+    },
+    {
+      "id": "metric_zero_denominator_null",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BI-02",
+        "BI-03",
+        "BI-06",
+        "BI-08",
+        "BI-09",
+        "BT-02"
+      ],
+      "input": {
+        "numerator": "0",
+        "denominator": "0"
+      },
+      "expected": {
+        "value": null,
+        "label": "Insufficient data"
+      }
+    },
+    {
+      "id": "metric_currency_mix_no_FX",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BI-05",
+        "BI-08",
+        "BI-09",
+        "BT-02"
+      ],
+      "input": {
+        "amounts": [
+          {
+            "currency": "AUD",
+            "amount": "100"
+          },
+          {
+            "currency": "USD",
+            "amount": "20"
+          }
+        ],
+        "approved_fx_policy": null
+      },
+      "expected": {
+        "combined_value": null,
+        "separate_currencies": [
+          "AUD",
+          "USD"
+        ]
+      }
+    },
+    {
+      "id": "days_to_collect_uses_final_cash_payment",
+      "domain": "finance",
+      "requirements": [
+        "BI-04",
+        "BT-02"
+      ],
+      "input": {
+        "issue_at": "2026-07-01T00:00:00Z",
+        "due_at": "2026-08-01T00:00:00Z",
+        "original_minor_units": 10000,
+        "allocations": [
+          {
+            "at": "2026-07-20T00:00:00Z",
+            "minor_units": 4000
+          },
+          {
+            "at": "2026-08-10T00:00:00Z",
+            "minor_units": 6000
+          }
+        ],
+        "credits_minor_units": 0,
+        "reversed_minor_units": 0
+      },
+      "expected": {
+        "days_to_collect": "40",
+        "days_beyond_terms": "9"
+      }
+    },
+    {
+      "id": "cost_unknown_not_zero",
+      "domain": "cost",
+      "requirements": [
+        "BI-08",
+        "BT-05"
+      ],
+      "input": {
+        "provider_operation": "O1",
+        "reported_charge": null,
+        "bounded_estimate": null
+      },
+      "expected": {
+        "cost_amount": null,
+        "cost_quality": "UNKNOWN",
+        "billable_activation_allowed": false
+      }
+    },
+    {
+      "id": "cost_shared_leaf_allocation_once",
+      "domain": "cost",
+      "requirements": [
+        "BI-08",
+        "BT-05"
+      ],
+      "input": {
+        "operation": "O1",
+        "component": "voice_total",
+        "charge": "0.000000000003",
+        "currency": "USD",
+        "leaves": [
+          {
+            "case": "C1",
+            "invoice": "I1"
+          },
+          {
+            "case": "C1",
+            "invoice": "I2"
+          },
+          {
+            "case": "C2",
+            "invoice": "I3"
+          }
+        ]
+      },
+      "expected": {
+        "unique_charge_count": 1,
+        "total_cost": "0.000000000003",
+        "weights": [
+          "0.333333333333",
+          "0.333333333333",
+          "0.333333333334"
+        ],
+        "weight_sum": "1.000000000000"
+      }
+    },
+    {
+      "id": "cost_unknown_components_make_partial_total",
+      "domain": "cost",
+      "requirements": [
+        "BI-08",
+        "BT-05"
+      ],
+      "input": {
+        "provider_cost": "1.25",
+        "human_minutes": null,
+        "fixed_allocation": null,
+        "resolved_cases": 1
+      },
+      "expected": {
+        "complete_cost_per_resolution": null,
+        "known_provider_component": "1.25",
+        "status": "partial"
+      }
+    },
+    {
+      "id": "budget_credentials_do_not_authorize",
+      "domain": "budget",
+      "requirements": [
+        "TP-05",
+        "TP-07"
+      ],
+      "input": {
+        "credential_configured": true,
+        "external_authorization": null,
+        "money_cap": "0",
+        "request_cap": 0
+      },
+      "expected": {
+        "provider_request_allowed": false,
+        "status": "BLOCKED"
+      }
+    },
+    {
+      "id": "budget_concurrent_reservations_bounded",
+      "domain": "budget",
+      "requirements": [
+        "BI-08",
+        "BT-05",
+        "TP-05"
+      ],
+      "input": {
+        "authorized_scope": "synthetic_test_only",
+        "cap": "0.10",
+        "existing_reserved": "0.00",
+        "simultaneous_requests": [
+          "0.06",
+          "0.06"
+        ]
+      },
+      "expected": {
+        "accepted_reservations": 1,
+        "reserved_max": "0.06",
+        "cap_exceeded": false,
+        "real_provider_calls": 0
+      }
+    },
+    {
+      "id": "budget_unknown_outcome_keeps_reservation",
+      "domain": "budget",
+      "requirements": [
+        "BI-08",
+        "BT-05"
+      ],
+      "input": {
+        "reserved": "0.06",
+        "outcome": "UNKNOWN_SIDE_EFFECT",
+        "verified_unused": false
+      },
+      "expected": {
+        "released": "0",
+        "retained_reserved": "0.06",
+        "automatic_retry": false
+      }
+    },
+    {
+      "id": "roi_estimate_complete_same_currency",
+      "domain": "roi",
+      "requirements": [
+        "BI-09",
+        "BT-06"
+      ],
+      "input": {
+        "eligible_cases": 10,
+        "baseline_minutes_per_issue": "10",
+        "measured_human_minutes": "40",
+        "wage_per_hour": "60",
+        "currency": "AUD",
+        "incremental_provider_cost": "10",
+        "incremental_fixed_cost": "20"
+      },
+      "expected": {
+        "estimated_time_saved_minutes": "60",
+        "estimated_capacity_value": "60",
+        "estimated_net_benefit": "30",
+        "incremental_cost_denominator": "30",
+        "estimated_roi_percent": "100",
+        "label": "ESTIMATE",
+        "realized_payroll_savings_claim": false
+      }
+    },
+    {
+      "id": "roi_missing_handling_is_unavailable",
+      "domain": "roi",
+      "requirements": [
+        "BI-09",
+        "BT-06"
+      ],
+      "input": {
+        "eligible_cases": 10,
+        "baseline_minutes_per_issue": "10",
+        "measured_human_minutes": null,
+        "incremental_provider_cost": "10"
+      },
+      "expected": {
+        "estimated_roi_percent": null,
+        "label": "Insufficient data"
+      }
+    },
+    {
+      "id": "retry_unknown_after_vendor_key_expiry",
+      "domain": "reliability",
+      "requirements": [
+        "AC-19",
+        "AT-17"
+      ],
+      "input": {
+        "outcome": "UNKNOWN_SIDE_EFFECT",
+        "vendor_key_expired": true,
+        "attempts": 1
+      },
+      "expected": {
+        "automatic_submissions": 0,
+        "status": "unknown_outcome",
+        "internal_operation_key_retained": true
+      }
+    },
+    {
+      "id": "retry_verified_no_effect_bounded",
+      "domain": "reliability",
+      "requirements": [
+        "AC-19",
+        "AC-25",
+        "AT-18"
+      ],
+      "input": {
+        "error": "TEMPORARILY_UNAVAILABLE",
+        "may_have_side_effect": false,
+        "provider_retry_after_seconds": 0
+      },
+      "expected": {
+        "total_attempts_max": 3,
+        "retry_delays_seconds": [
+          60,
+          300
+        ],
+        "on_exhaustion": "dead_letter"
+      }
+    },
+    {
+      "id": "voice_capture_off_provider_not_verified",
+      "domain": "voice",
+      "requirements": [
+        "AC-23",
+        "AC-26",
+        "AT-14"
+      ],
+      "input": {
+        "recording_enabled": false,
+        "transcription_enabled": false,
+        "provider_no_capture_verified": false,
+        "lawful_consent_verified": false
+      },
+      "expected": {
+        "live_session_allowed": false,
+        "stored_audio": false,
+        "stored_transcript": false,
+        "live_status": "BLOCKED"
+      }
+    },
+    {
+      "id": "voice_browser_not_number_call_evidence",
+      "domain": "voice",
+      "requirements": [
+        "AC-23",
+        "AT-14"
+      ],
+      "input": {
+        "browser_voice_executed": true,
+        "pstn_number_dialed": false,
+        "authorized_recording_stored": false
+      },
+      "expected": {
+        "AC-23_live_result": "BLOCKED",
+        "P-VOICE-02_result": "SKIPPED",
+        "stored_recording_clause_proven": false
+      }
+    },
+    {
+      "id": "retention_synthetic_expiry",
+      "domain": "retention",
+      "requirements": [
+        "AC-26"
+      ],
+      "input": {
+        "synthetic": true,
+        "captured_at": "2026-10-18T00:00:00Z",
+        "now": "2026-11-17T00:00:00Z",
+        "verified_legal_hold": false
+      },
+      "expected": {
+        "access_allowed": false,
+        "retention_days": 30,
+        "purge_due_at": "2026-11-18T00:00:00Z",
+        "hidden_verbatim_copy_allowed": false
+      }
+    },
+    {
+      "id": "retention_real_policy_missing_blocks",
+      "domain": "retention",
+      "requirements": [
+        "AC-26",
+        "TP-05"
+      ],
+      "input": {
+        "synthetic": false,
+        "approved_retention_policy": null
+      },
+      "expected": {
+        "capture_or_ingest_allowed": false,
+        "status": "BLOCKED"
+      }
+    },
+    {
+      "id": "retention_legal_authority_uncertain_quarantines",
+      "domain": "retention",
+      "requirements": [
+        "AC-26"
+      ],
+      "input": {
+        "legal_hold_claimed": true,
+        "authority_verified": false
+      },
+      "expected": {
+        "app_access_allowed": false,
+        "new_capture_allowed": false,
+        "destructive_purge_allowed": false,
+        "review_required": true
+      }
+    },
+    {
+      "id": "artifact_max_size_boundary",
+      "domain": "artifact",
+      "requirements": [
+        "AC-20",
+        "AC-26"
+      ],
+      "input": {
+        "content_type": "application/pdf",
+        "size_bytes": 10485760,
+        "synthetic": true
+      },
+      "expected": {
+        "within_demo_size_limit": true
+      }
+    },
+    {
+      "id": "artifact_oversize_visible_failure",
+      "domain": "artifact",
+      "requirements": [
+        "AC-20",
+        "AC-26"
+      ],
+      "input": {
+        "content_type": "application/pdf",
+        "size_bytes": 10485761,
+        "synthetic": true
+      },
+      "expected": {
+        "within_demo_size_limit": false,
+        "artifact_state": "quarantined",
+        "silently_discard_original": false
+      }
+    },
+    {
+      "id": "artifact_proxy_rejects_wrong_tenant",
+      "domain": "artifact",
+      "requirements": [
+        "AC-17",
+        "AC-26",
+        "AT-15"
+      ],
+      "input": {
+        "owner_tenant": "T1",
+        "request_tenant": "T2",
+        "internal_signed_url_not_expired": true
+      },
+      "expected": {
+        "download_allowed": false,
+        "http_status": 404
+      }
+    },
+    {
+      "id": "demo_env_without_demo_tenant_denied",
+      "domain": "demo",
+      "requirements": [
+        "AC-01",
+        "AC-17",
+        "AT-15"
+      ],
+      "input": {
+        "app_env": "demo",
+        "tenant_is_demo": false,
+        "role": "owner",
+        "command": "simulate_payment"
+      },
+      "expected": {
+        "allowed": false,
+        "real_ledger_writes": 0
+      }
+    },
+    {
+      "id": "demo_reset_fences_stale_generation",
+      "domain": "demo",
+      "requirements": [
+        "AC-19",
+        "AT-19"
+      ],
+      "input": {
+        "reset_actor_role": "owner",
+        "old_generation": 3,
+        "current_generation": 4,
+        "worker_generation": 3,
+        "prior_unknown_effect_exists": true
+      },
+      "expected": {
+        "stale_worker_mutation_allowed": false,
+        "stale_provider_submission_allowed": false,
+        "unknown_audit_preserved": true
+      }
+    },
+    {
+      "id": "source_same_payment_id_different_connection",
+      "domain": "identity",
+      "requirements": [
+        "AC-01",
+        "AC-17",
+        "AT-15"
+      ],
+      "input": {
+        "payments": [
+          {
+            "tenant": "T1",
+            "connection": "C1",
+            "external_payment": "P1",
+            "allocation": "A1"
+          },
+          {
+            "tenant": "T1",
+            "connection": "C2",
+            "external_payment": "P1",
+            "allocation": "A1"
+          }
+        ]
+      },
+      "expected": {
+        "distinct_allocation_count": 2,
+        "cross_link_allowed": false
+      }
+    },
+    {
+      "id": "sse_step_updates_have_distinct_cursor",
+      "domain": "sse",
+      "requirements": [
+        "AC-16",
+        "AT-12"
+      ],
+      "input": {
+        "events": [
+          {
+            "step_id": "S1",
+            "event_sequence": 1,
+            "status": "started"
+          },
+          {
+            "step_id": "S1",
+            "event_sequence": 2,
+            "status": "completed"
+          }
+        ],
+        "last_event_id": 1
+      },
+      "expected": {
+        "replayed_sequences": [
+          2
+        ],
+        "rendered_final_status": "completed",
+        "tool_reexecution_count": 0
+      }
+    },
+    {
+      "id": "adapter_unsupported_not_false_success",
+      "domain": "adapter",
+      "requirements": [
+        "AC-20",
+        "TP-08"
+      ],
+      "input": {
+        "method": "subscribe_or_renew_notifications",
+        "supported": false
+      },
+      "expected": {
+        "error": "UNSUPPORTED_CAPABILITY",
+        "claimed_effect": false,
+        "essential_live_gate_if_required": "BLOCKED"
+      }
+    },
+    {
+      "id": "adapter_webhook_not_sender_authority",
+      "domain": "adapter",
+      "requirements": [
+        "AC-17",
+        "AT-18"
+      ],
+      "input": {
+        "webhook_signature_valid": true,
+        "sender_authority_verified": false,
+        "requested_action": "change_recipient"
+      },
+      "expected": {
+        "sensitive_action_allowed": false,
+        "original_preserved": true,
+        "review_required": true
+      }
+    },
+    {
+      "id": "evidence_mock_not_live",
+      "domain": "evidence",
+      "requirements": [
+        "TP-06",
+        "TP-07",
+        "DOC-05",
+        "DOC-06"
+      ],
+      "input": {
+        "lane": "offline",
+        "fake_adapter_result": "PASS",
+        "live_authorized": false
+      },
+      "expected": {
+        "offline_result": "PASS",
+        "required_live_result": "BLOCKED",
+        "provider_readiness": "NOT_CONFIGURED"
+      }
+    },
+    {
+      "id": "promise_paid_by_preconfirmation_cash_not_fulfilled",
+      "domain": "promise",
+      "requirements": [
+        "AC-09",
+        "AC-11",
+        "AT-10",
+        "AT-11"
+      ],
+      "input": {
+        "confirmed_at": "2026-11-17T00:00:00Z",
+        "cutoff": "2026-11-20T13:00:00Z",
+        "as_of": "2026-11-20T13:00:01Z",
+        "currency": "AUD",
+        "source_fresh": true,
+        "invoice": "I101",
+        "amount_minor_units": 4000,
+        "invoice_original_minor_units": 10000,
+        "source_financial_status": "paid",
+        "source_outstanding_minor_units": 0,
+        "allocations": [
+          {
+            "id": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-16T23:59:59Z",
+            "minor_units": 10000
+          }
+        ]
+      },
+      "expected": {
+        "status": "MISSED",
+        "timely_performance_minor_units": 0,
+        "performance_status": "OUTSIDE_WINDOW",
+        "collection_lifecycle": "closed",
+        "pending_outreach_cancelled": true,
+        "financial_status_mutated_by_aco": false
+      }
+    },
+    {
+      "id": "promise_partial_commitment_full_performance_invoice_open",
+      "domain": "promise",
+      "requirements": [
+        "AC-09",
+        "AT-10"
+      ],
+      "input": {
+        "confirmed_at": "2026-11-17T00:00:00Z",
+        "cutoff": "2026-11-20T13:00:00Z",
+        "as_of": "2026-11-20T13:00:01Z",
+        "currency": "AUD",
+        "source_fresh": true,
+        "invoice": "I101",
+        "amount_minor_units": 4000,
+        "invoice_original_minor_units": 10000,
+        "source_financial_status": "partially_paid",
+        "source_outstanding_minor_units": 6000,
+        "allocations": [
+          {
+            "id": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-19T00:00:00Z",
+            "minor_units": 4000
+          }
+        ]
+      },
+      "expected": {
+        "status": "FULFILLED",
+        "timely_performance_minor_units": 4000,
+        "performance_status": "ON_TIME",
+        "collection_lifecycle": "active",
+        "promise_hold_active": false,
+        "financial_status_mutated_by_aco": false
+      }
+    },
+    {
+      "id": "promise_exact_cutoff_cash_is_late",
+      "domain": "promise",
+      "requirements": [
+        "AC-09",
+        "AC-11",
+        "AT-10"
+      ],
+      "input": {
+        "confirmed_at": "2026-11-17T00:00:00Z",
+        "cutoff": "2026-11-20T13:00:00Z",
+        "as_of": "2026-11-20T13:00:01Z",
+        "currency": "AUD",
+        "source_fresh": true,
+        "invoice": "I101",
+        "amount_minor_units": 4000,
+        "source_financial_status": "paid",
+        "source_outstanding_minor_units": 0,
+        "allocations": [
+          {
+            "id": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-20T13:00:00Z",
+            "minor_units": 4000
+          }
+        ]
+      },
+      "expected": {
+        "status": "MISSED",
+        "timely_performance_minor_units": 0,
+        "late_performance_minor_units": 4000,
+        "performance_status": "LATE_FULFILLED",
+        "missed_history_preserved": true,
+        "collection_lifecycle": "closed",
+        "backlog_sends": 0
+      }
+    },
+    {
+      "id": "promise_after_cutoff_cash_preserves_missed",
+      "domain": "promise",
+      "requirements": [
+        "AC-09",
+        "AC-11",
+        "AT-10"
+      ],
+      "input": {
+        "confirmed_at": "2026-11-17T00:00:00Z",
+        "cutoff": "2026-11-20T13:00:00Z",
+        "as_of": "2026-11-21T14:00:00Z",
+        "currency": "AUD",
+        "source_fresh": true,
+        "invoice": "I101",
+        "amount_minor_units": 4000,
+        "prior_status": "MISSED",
+        "source_financial_status": "paid",
+        "source_outstanding_minor_units": 0,
+        "allocations": [
+          {
+            "id": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-21T13:00:00Z",
+            "minor_units": 4000
+          }
+        ]
+      },
+      "expected": {
+        "status": "MISSED",
+        "timely_performance_minor_units": 0,
+        "late_performance_minor_units": 4000,
+        "performance_status": "LATE_FULFILLED",
+        "missed_history_preserved": true,
+        "collection_lifecycle": "closed",
+        "backlog_sends": 0
+      }
+    },
+    {
+      "id": "promise_reversed_performance_reopens_missed",
+      "domain": "promise",
+      "requirements": [
+        "AC-09",
+        "AC-11",
+        "AT-10"
+      ],
+      "input": {
+        "confirmed_at": "2026-11-17T00:00:00Z",
+        "cutoff": "2026-11-20T13:00:00Z",
+        "as_of": "2026-11-20T13:00:01Z",
+        "currency": "AUD",
+        "source_fresh": true,
+        "invoice": "I101",
+        "amount_minor_units": 4000,
+        "prior_status": "FULFILLED",
+        "source_outstanding_minor_units": 1000,
+        "allocations": [
+          {
+            "id": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-19T00:00:00Z",
+            "minor_units": 4000
+          }
+        ],
+        "reversals": [
+          {
+            "id": "R1",
+            "allocation": "A1",
+            "effective_at": "2026-11-20T12:59:59Z",
+            "minor_units": 1000
+          }
+        ]
+      },
+      "expected": {
+        "status": "MISSED",
+        "timely_performance_minor_units": 3000,
+        "prior_fulfilled_history_preserved": true,
+        "reversal_evidence_count": 1,
+        "backlog_sends": 0
+      }
+    },
+    {
+      "id": "promise_full_commitment_within_window",
+      "domain": "promise",
+      "requirements": [
+        "AC-09",
+        "AT-10"
+      ],
+      "input": {
+        "confirmed_at": "2026-11-17T00:00:00Z",
+        "cutoff": "2026-11-20T13:00:00Z",
+        "as_of": "2026-11-20T13:00:01Z",
+        "currency": "AUD",
+        "source_fresh": true,
+        "invoice": "I101",
+        "amount_minor_units": 4000,
+        "source_financial_status": "paid",
+        "source_outstanding_minor_units": 0,
+        "allocations": [
+          {
+            "id": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-20T12:59:59Z",
+            "minor_units": 4000
+          }
+        ]
+      },
+      "expected": {
+        "status": "FULFILLED",
+        "timely_performance_minor_units": 4000,
+        "performance_status": "ON_TIME",
+        "collection_lifecycle": "closed",
+        "pending_outreach_cancelled": true
+      }
+    },
+    {
+      "id": "dispatch_ticket_age_59_seconds",
+      "domain": "ticket",
+      "requirements": [
+        "AC-04",
+        "AC-12",
+        "AC-19",
+        "AT-05"
+      ],
+      "input": {
+        "age_seconds": 59,
+        "used": false,
+        "issued_worker_generation": "W1",
+        "current_worker_generation": "W1",
+        "changed_versions": [],
+        "source_verified_this_attempt": true
+      },
+      "expected": {
+        "allowed": true,
+        "additional_provider_submissions": 1
+      }
+    },
+    {
+      "id": "dispatch_ticket_age_60_seconds",
+      "domain": "ticket",
+      "requirements": [
+        "AC-04",
+        "AC-12",
+        "AC-19",
+        "AT-05"
+      ],
+      "input": {
+        "age_seconds": 60,
+        "used": false,
+        "issued_worker_generation": "W1",
+        "current_worker_generation": "W1",
+        "changed_versions": [],
+        "source_verified_this_attempt": true
+      },
+      "expected": {
+        "allowed": false,
+        "additional_provider_submissions": 0
+      }
+    },
+    {
+      "id": "dispatch_ticket_reuse_rejected",
+      "domain": "ticket",
+      "requirements": [
+        "AC-19",
+        "AT-05"
+      ],
+      "input": {
+        "age_seconds": 1,
+        "used": true,
+        "issued_worker_generation": "W1",
+        "current_worker_generation": "W1",
+        "changed_versions": [],
+        "source_verified_this_attempt": true,
+        "prior_provider_submissions": 1,
+        "prior_effect_count": 1
+      },
+      "expected": {
+        "allowed": false,
+        "additional_provider_submissions": 0,
+        "existing_effect_count": 1
+      }
+    },
+    {
+      "id": "dispatch_ticket_restart_rejected",
+      "domain": "ticket",
+      "requirements": [
+        "AC-19",
+        "AT-19"
+      ],
+      "input": {
+        "age_seconds": 1,
+        "used": false,
+        "issued_worker_generation": "W1",
+        "current_worker_generation": "W2",
+        "changed_versions": [],
+        "source_verified_this_attempt": true
+      },
+      "expected": {
+        "allowed": false,
+        "additional_provider_submissions": 0
+      }
+    },
+    {
+      "id": "dispatch_ticket_source_version_invalidated",
+      "domain": "ticket",
+      "requirements": [
+        "AC-12",
+        "AC-19",
+        "AT-05",
+        "AT-13"
+      ],
+      "input": {
+        "age_seconds": 1,
+        "used": false,
+        "issued_worker_generation": "W1",
+        "current_worker_generation": "W1",
+        "changed_versions": [
+          "source"
+        ],
+        "source_verified_this_attempt": true
+      },
+      "expected": {
+        "allowed": false,
+        "additional_provider_submissions": 0,
+        "reevaluation_required": true
+      }
+    },
+    {
+      "id": "dispatch_ticket_policy_version_invalidated",
+      "domain": "ticket",
+      "requirements": [
+        "AC-12",
+        "AC-19",
+        "AT-05",
+        "AT-13"
+      ],
+      "input": {
+        "age_seconds": 1,
+        "used": false,
+        "issued_worker_generation": "W1",
+        "current_worker_generation": "W1",
+        "changed_versions": [
+          "policy"
+        ],
+        "source_verified_this_attempt": true
+      },
+      "expected": {
+        "allowed": false,
+        "additional_provider_submissions": 0,
+        "reevaluation_required": true
+      }
+    },
+    {
+      "id": "dispatch_ticket_recipient_version_invalidated",
+      "domain": "ticket",
+      "requirements": [
+        "AC-12",
+        "AC-19",
+        "AT-05",
+        "AT-13"
+      ],
+      "input": {
+        "age_seconds": 1,
+        "used": false,
+        "issued_worker_generation": "W1",
+        "current_worker_generation": "W1",
+        "changed_versions": [
+          "recipient"
+        ],
+        "source_verified_this_attempt": true
+      },
+      "expected": {
+        "allowed": false,
+        "additional_provider_submissions": 0,
+        "reevaluation_required": true
+      }
+    },
+    {
+      "id": "dispatch_ticket_hold_version_invalidated",
+      "domain": "ticket",
+      "requirements": [
+        "AC-12",
+        "AC-19",
+        "AT-05",
+        "AT-13"
+      ],
+      "input": {
+        "age_seconds": 1,
+        "used": false,
+        "issued_worker_generation": "W1",
+        "current_worker_generation": "W1",
+        "changed_versions": [
+          "hold"
+        ],
+        "source_verified_this_attempt": true
+      },
+      "expected": {
+        "allowed": false,
+        "additional_provider_submissions": 0,
+        "reevaluation_required": true
+      }
+    },
+    {
+      "id": "dispatch_ticket_approval_version_invalidated",
+      "domain": "ticket",
+      "requirements": [
+        "AC-12",
+        "AC-19",
+        "AT-05",
+        "AT-13"
+      ],
+      "input": {
+        "age_seconds": 1,
+        "used": false,
+        "issued_worker_generation": "W1",
+        "current_worker_generation": "W1",
+        "changed_versions": [
+          "approval"
+        ],
+        "source_verified_this_attempt": true
+      },
+      "expected": {
+        "allowed": false,
+        "additional_provider_submissions": 0,
+        "reevaluation_required": true
+      }
+    },
+    {
+      "id": "artifact_proxy_same_tenant_consent_revoked",
+      "domain": "artifact",
+      "requirements": [
+        "AC-17",
+        "AC-26",
+        "AT-15"
+      ],
+      "input": {
+        "owner_tenant": "T1",
+        "request_tenant": "T1",
+        "authorized_user": "U1",
+        "initial_authorization_allowed": true,
+        "internal_signed_url_not_expired": true,
+        "after_authorization_event": "consent_revoked",
+        "purge_complete": false,
+        "role": "owner"
+      },
+      "expected": {
+        "next_proxy_read_allowed": false,
+        "http_status": 404,
+        "raw_object_may_still_exist_pending_purge": true,
+        "hidden_verbatim_copy_allowed": false
+      }
+    },
+    {
+      "id": "artifact_proxy_same_tenant_deletion_revoked",
+      "domain": "artifact",
+      "requirements": [
+        "AC-17",
+        "AC-26",
+        "AT-15"
+      ],
+      "input": {
+        "owner_tenant": "T1",
+        "request_tenant": "T1",
+        "authorized_user": "U1",
+        "initial_authorization_allowed": true,
+        "internal_signed_url_not_expired": true,
+        "after_authorization_event": "deletion_requested",
+        "purge_complete": false,
+        "role": "owner"
+      },
+      "expected": {
+        "next_proxy_read_allowed": false,
+        "http_status": 404,
+        "raw_object_may_still_exist_pending_purge": true,
+        "hidden_verbatim_copy_allowed": false
+      }
+    },
+    {
+      "id": "cohort_pre_D_cash_refund_within_horizon",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BI-02",
+        "BI-05",
+        "BT-01",
+        "BT-02"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "pre_D_allocations": [
+          {
+            "id": "P0",
+            "effective_at": "2026-07-25T00:00:00Z",
+            "minor_units": 2000
+          }
+        ],
+        "opening_exposure_minor_units": 8000,
+        "horizon_allocations": [
+          {
+            "id": "P1",
+            "effective_at": "2026-08-15T00:00:00Z",
+            "minor_units": 8000
+          }
+        ],
+        "as_of": "2026-09-01T00:00:00Z",
+        "noncash_settlement": false,
+        "adjustments": [
+          {
+            "id": "R0",
+            "kind": "refund",
+            "allocation": "P0",
+            "effective_at": "2026-08-20T00:00:00Z",
+            "observed_at": "2026-08-20T01:00:00Z",
+            "minor_units": 2000
+          }
+        ],
+        "source_outstanding_before_H_minor_units": 2000,
+        "source_outstanding_as_of_minor_units": 2000
+      },
+      "expected": {
+        "raw_net_cohort_cash_minor_units": 6000,
+        "recovery_numerator_minor_units": 6000,
+        "recovery_denominator_minor_units": 8000,
+        "recovery_percent": "75",
+        "paid_in_full_count": 0,
+        "membership_and_denominator_preserved": true
+      }
+    },
+    {
+      "id": "cohort_pre_D_cash_refund_after_horizon_restated",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BI-02",
+        "BI-05",
+        "BT-01",
+        "BT-02"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "pre_D_allocations": [
+          {
+            "id": "P0",
+            "effective_at": "2026-07-25T00:00:00Z",
+            "minor_units": 2000
+          }
+        ],
+        "opening_exposure_minor_units": 8000,
+        "horizon_allocations": [
+          {
+            "id": "P1",
+            "effective_at": "2026-08-15T00:00:00Z",
+            "minor_units": 8000
+          }
+        ],
+        "as_of": "2026-09-01T00:00:00Z",
+        "noncash_settlement": false,
+        "prior_result_version": "M1",
+        "prior_recovery_percent": "100",
+        "prior_paid_in_full_count": 1,
+        "adjustments": [
+          {
+            "id": "R0",
+            "kind": "refund",
+            "allocation": "P0",
+            "effective_at": "2026-08-31T00:00:00Z",
+            "observed_at": "2026-08-31T01:00:00Z",
+            "minor_units": 2000
+          }
+        ],
+        "source_outstanding_before_H_minor_units": 0,
+        "source_outstanding_as_of_minor_units": 2000
+      },
+      "expected": {
+        "raw_net_cohort_cash_minor_units": 6000,
+        "recovery_numerator_minor_units": 6000,
+        "recovery_denominator_minor_units": 8000,
+        "recovery_percent": "75",
+        "paid_in_full_count": 0,
+        "new_result_version_required": true,
+        "prior_result_version": "M1",
+        "prior_result_preserved": true,
+        "label": "RESTATED",
+        "membership_and_denominator_preserved": true
+      }
+    },
+    {
+      "id": "cohort_pre_D_cash_reversal_within_horizon",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BI-02",
+        "BI-05",
+        "BT-01",
+        "BT-02"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "pre_D_allocations": [
+          {
+            "id": "P0",
+            "effective_at": "2026-07-25T00:00:00Z",
+            "minor_units": 2000
+          }
+        ],
+        "opening_exposure_minor_units": 8000,
+        "horizon_allocations": [
+          {
+            "id": "P1",
+            "effective_at": "2026-08-15T00:00:00Z",
+            "minor_units": 8000
+          }
+        ],
+        "as_of": "2026-09-01T00:00:00Z",
+        "noncash_settlement": false,
+        "adjustments": [
+          {
+            "id": "R0",
+            "kind": "reversal",
+            "allocation": "P0",
+            "effective_at": "2026-08-20T00:00:00Z",
+            "observed_at": "2026-08-20T01:00:00Z",
+            "minor_units": 2000
+          }
+        ],
+        "source_outstanding_before_H_minor_units": 2000,
+        "source_outstanding_as_of_minor_units": 2000
+      },
+      "expected": {
+        "raw_net_cohort_cash_minor_units": 6000,
+        "recovery_numerator_minor_units": 6000,
+        "recovery_denominator_minor_units": 8000,
+        "recovery_percent": "75",
+        "paid_in_full_count": 0,
+        "membership_and_denominator_preserved": true
+      }
+    },
+    {
+      "id": "cohort_pre_D_cash_reversal_after_horizon_restated",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BI-02",
+        "BI-05",
+        "BT-01",
+        "BT-02"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "pre_D_allocations": [
+          {
+            "id": "P0",
+            "effective_at": "2026-07-25T00:00:00Z",
+            "minor_units": 2000
+          }
+        ],
+        "opening_exposure_minor_units": 8000,
+        "horizon_allocations": [
+          {
+            "id": "P1",
+            "effective_at": "2026-08-15T00:00:00Z",
+            "minor_units": 8000
+          }
+        ],
+        "as_of": "2026-09-01T00:00:00Z",
+        "noncash_settlement": false,
+        "prior_result_version": "M1",
+        "prior_recovery_percent": "100",
+        "prior_paid_in_full_count": 1,
+        "adjustments": [
+          {
+            "id": "R0",
+            "kind": "reversal",
+            "allocation": "P0",
+            "effective_at": "2026-08-31T00:00:00Z",
+            "observed_at": "2026-08-31T01:00:00Z",
+            "minor_units": 2000
+          }
+        ],
+        "source_outstanding_before_H_minor_units": 0,
+        "source_outstanding_as_of_minor_units": 2000
+      },
+      "expected": {
+        "raw_net_cohort_cash_minor_units": 6000,
+        "recovery_numerator_minor_units": 6000,
+        "recovery_denominator_minor_units": 8000,
+        "recovery_percent": "75",
+        "paid_in_full_count": 0,
+        "new_result_version_required": true,
+        "prior_result_version": "M1",
+        "prior_result_preserved": true,
+        "label": "RESTATED",
+        "membership_and_denominator_preserved": true
+      }
+    },
+    {
+      "id": "cohort_pre_D_effective_refund_not_deducted_twice",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BI-02",
+        "BI-05",
+        "BT-01",
+        "BT-02"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "pre_D_allocations": [
+          {
+            "id": "P0",
+            "effective_at": "2026-07-25T00:00:00Z",
+            "minor_units": 2000
+          }
+        ],
+        "opening_exposure_minor_units": 10000,
+        "horizon_allocations": [
+          {
+            "id": "P1",
+            "effective_at": "2026-08-15T00:00:00Z",
+            "minor_units": 10000
+          }
+        ],
+        "as_of": "2026-09-01T00:00:00Z",
+        "noncash_settlement": false,
+        "adjustments": [
+          {
+            "id": "R0",
+            "kind": "refund",
+            "allocation": "P0",
+            "effective_at": "2026-07-26T00:00:00Z",
+            "observed_at": "2026-07-26T01:00:00Z",
+            "minor_units": 2000
+          }
+        ],
+        "source_outstanding_before_H_minor_units": 0,
+        "source_outstanding_as_of_minor_units": 0
+      },
+      "expected": {
+        "raw_net_cohort_cash_minor_units": 10000,
+        "recovery_numerator_minor_units": 10000,
+        "recovery_denominator_minor_units": 10000,
+        "recovery_percent": "100",
+        "paid_in_full_count": 1,
+        "refund_deducted_in_numerator_minor_units": 0
+      }
+    },
+    {
+      "id": "cohort_pre_D_cash_refund_missing_allocation_unavailable",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BI-02",
+        "BT-02"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "pre_D_allocations": [
+          {
+            "id": "P0",
+            "effective_at": "2026-07-25T00:00:00Z",
+            "minor_units": 2000
+          }
+        ],
+        "opening_exposure_minor_units": 8000,
+        "horizon_allocations": [
+          {
+            "id": "P1",
+            "effective_at": "2026-08-15T00:00:00Z",
+            "minor_units": 8000
+          }
+        ],
+        "as_of": "2026-09-01T00:00:00Z",
+        "noncash_settlement": false,
+        "adjustments": [
+          {
+            "id": "R0",
+            "kind": "refund",
+            "allocation": null,
+            "effective_at": "2026-08-20T00:00:00Z",
+            "minor_units": 2000
+          }
+        ]
+      },
+      "expected": {
+        "value": null,
+        "paid_in_full_value": null,
+        "status": "allocation_review",
+        "invented_allocation": false
+      }
+    },
+    {
+      "id": "cohort_pre_D_cash_refund_inconsistent_opening_unavailable",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BI-02",
+        "BT-02"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "pre_D_allocations": [
+          {
+            "id": "P0",
+            "effective_at": "2026-07-25T00:00:00Z",
+            "minor_units": 2000
+          }
+        ],
+        "opening_exposure_minor_units": 7000,
+        "horizon_allocations": [
+          {
+            "id": "P1",
+            "effective_at": "2026-08-15T00:00:00Z",
+            "minor_units": 8000
+          }
+        ],
+        "as_of": "2026-09-01T00:00:00Z",
+        "noncash_settlement": false,
+        "adjustments": [
+          {
+            "id": "R0",
+            "kind": "refund",
+            "allocation": "P0",
+            "effective_at": "2026-08-20T00:00:00Z",
+            "minor_units": 2000
+          }
+        ]
+      },
+      "expected": {
+        "value": null,
+        "paid_in_full_value": null,
+        "status": "opening_history_review",
+        "guessed_exposure": false
+      }
+    },
+    {
+      "id": "cohort_pre_D_cash_reversal_preserves_negative_raw_net",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BI-02",
+        "BT-02"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "pre_D_allocations": [
+          {
+            "id": "P0",
+            "effective_at": "2026-07-25T00:00:00Z",
+            "minor_units": 9000
+          }
+        ],
+        "opening_exposure_minor_units": 1000,
+        "horizon_allocations": [],
+        "as_of": "2026-09-01T00:00:00Z",
+        "noncash_settlement": false,
+        "adjustments": [
+          {
+            "id": "R0",
+            "kind": "reversal",
+            "allocation": "P0",
+            "effective_at": "2026-08-20T00:00:00Z",
+            "minor_units": 9000
+          }
+        ],
+        "source_outstanding_before_H_minor_units": 10000,
+        "source_outstanding_as_of_minor_units": 10000
+      },
+      "expected": {
+        "raw_net_cohort_cash_minor_units": -9000,
+        "recovery_numerator_minor_units": 0,
+        "recovery_denominator_minor_units": 1000,
+        "recovery_percent": "0",
+        "paid_in_full_count": 0
+      }
+    },
+    {
+      "id": "cohort_pre_D_cash_refund_late_observed_restated",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BI-02",
+        "BI-05",
+        "BT-01",
+        "BT-02"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "pre_D_allocations": [
+          {
+            "id": "P0",
+            "effective_at": "2026-07-25T00:00:00Z",
+            "minor_units": 2000
+          }
+        ],
+        "opening_exposure_minor_units": 8000,
+        "horizon_allocations": [
+          {
+            "id": "P1",
+            "effective_at": "2026-08-15T00:00:00Z",
+            "minor_units": 8000
+          }
+        ],
+        "as_of": "2026-09-01T00:00:00Z",
+        "noncash_settlement": false,
+        "prior_result_version": "M1",
+        "prior_recovery_percent": "100",
+        "prior_paid_in_full_count": 1,
+        "adjustments": [
+          {
+            "id": "R0",
+            "kind": "refund",
+            "allocation": "P0",
+            "effective_at": "2026-08-20T00:00:00Z",
+            "observed_at": "2026-08-31T01:00:00Z",
+            "minor_units": 2000
+          }
+        ],
+        "source_outstanding_before_H_minor_units": 2000,
+        "source_outstanding_as_of_minor_units": 2000
+      },
+      "expected": {
+        "raw_net_cohort_cash_minor_units": 6000,
+        "recovery_numerator_minor_units": 6000,
+        "recovery_denominator_minor_units": 8000,
+        "recovery_percent": "75",
+        "paid_in_full_count": 0,
+        "new_result_version_required": true,
+        "prior_result_version": "M1",
+        "prior_result_preserved": true,
+        "label": "RESTATED",
+        "membership_and_denominator_preserved": true
+      }
+    },
+    {
+      "id": "cohort_refund_observed_after_asof_excluded",
+      "domain": "finance",
+      "requirements": [
+        "BI-01",
+        "BI-02",
+        "BI-05",
+        "BT-01",
+        "BT-02"
+      ],
+      "input": {
+        "currency": "AUD",
+        "timezone": "Australia/Melbourne",
+        "due_date": "2026-08-01",
+        "original_minor_units": 10000,
+        "pre_D_allocations": [
+          {
+            "id": "P0",
+            "effective_at": "2026-07-25T00:00:00Z",
+            "minor_units": 2000
+          }
+        ],
+        "opening_exposure_minor_units": 8000,
+        "horizon_allocations": [
+          {
+            "id": "P1",
+            "effective_at": "2026-08-15T00:00:00Z",
+            "minor_units": 8000
+          }
+        ],
+        "as_of": "2026-09-01T00:00:00Z",
+        "noncash_settlement": false,
+        "prior_result_version": "M1",
+        "prior_recovery_percent": "100",
+        "prior_paid_in_full_count": 1,
+        "adjustments": [
+          {
+            "id": "R0",
+            "kind": "refund",
+            "allocation": "P0",
+            "effective_at": "2026-08-31T00:00:00Z",
+            "observed_at": "2026-09-02T01:00:00Z",
+            "minor_units": 2000
+          }
+        ],
+        "source_outstanding_before_H_minor_units": 0,
+        "source_outstanding_as_of_minor_units": 0
+      },
+      "expected": {
+        "raw_net_cohort_cash_minor_units": 8000,
+        "recovery_numerator_minor_units": 8000,
+        "recovery_denominator_minor_units": 8000,
+        "recovery_percent": "100",
+        "paid_in_full_count": 1,
+        "new_result_version_required": false,
+        "result_version": "M1",
+        "membership_and_denominator_preserved": true
+      }
+    },
+    {
+      "id": "promise_reversal_exact_residual_before_cutoff",
+      "domain": "promise",
+      "requirements": [
+        "AC-09",
+        "AC-11",
+        "AT-10",
+        "AT-11"
+      ],
+      "input": {
+        "confirmed_at": "2026-11-17T00:00:00Z",
+        "cutoff": "2026-11-20T13:00:00Z",
+        "currency": "AUD",
+        "invoice": "I101",
+        "promise_id": "PR1",
+        "amount_minor_units": 4000,
+        "invoice_original_minor_units": 10000,
+        "prior_status": "FULFILLED",
+        "source_fresh": true,
+        "source_evidence_unambiguous": true,
+        "prior_other_holds": [
+          "active_dispute"
+        ],
+        "source_financial_status": "partially_paid",
+        "as_of": "2026-11-20T12:00:00Z",
+        "source_outstanding_minor_units": 6000,
+        "allocations": [
+          {
+            "id": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-19T00:00:00Z",
+            "minor_units": 5000,
+            "source_verified": true,
+            "used_by_other_promise": false
+          }
+        ],
+        "reversals": [
+          {
+            "id": "R1",
+            "allocation": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-20T11:59:59Z",
+            "minor_units": 1000,
+            "source_verified": true
+          }
+        ]
+      },
+      "expected": {
+        "status": "FULFILLED",
+        "timely_performance_minor_units": 4000,
+        "verification_status": "VERIFIED",
+        "promise_hold_active": false,
+        "hold_reasons": [
+          "active_dispute"
+        ],
+        "new_missed_episode_count": 0,
+        "prior_fulfilled_history_preserved": true,
+        "reversal_evidence_count": 1,
+        "collection_lifecycle": "active",
+        "source_outstanding_minor_units": 6000,
+        "backlog_sends": 0,
+        "actual_provider_submissions": 0
+      }
+    },
+    {
+      "id": "promise_reversal_excess_residual_before_cutoff",
+      "domain": "promise",
+      "requirements": [
+        "AC-09",
+        "AC-11",
+        "AT-10",
+        "AT-11"
+      ],
+      "input": {
+        "confirmed_at": "2026-11-17T00:00:00Z",
+        "cutoff": "2026-11-20T13:00:00Z",
+        "currency": "AUD",
+        "invoice": "I101",
+        "promise_id": "PR1",
+        "amount_minor_units": 4000,
+        "invoice_original_minor_units": 10000,
+        "prior_status": "FULFILLED",
+        "source_fresh": true,
+        "source_evidence_unambiguous": true,
+        "prior_other_holds": [
+          "active_dispute"
+        ],
+        "source_financial_status": "partially_paid",
+        "as_of": "2026-11-20T12:00:00Z",
+        "source_outstanding_minor_units": 5900,
+        "allocations": [
+          {
+            "id": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-19T00:00:00Z",
+            "minor_units": 5000,
+            "source_verified": true,
+            "used_by_other_promise": false
+          }
+        ],
+        "reversals": [
+          {
+            "id": "R1",
+            "allocation": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-20T11:59:59Z",
+            "minor_units": 900,
+            "source_verified": true
+          }
+        ]
+      },
+      "expected": {
+        "status": "FULFILLED",
+        "timely_performance_minor_units": 4100,
+        "verification_status": "VERIFIED",
+        "promise_hold_active": false,
+        "hold_reasons": [
+          "active_dispute"
+        ],
+        "new_missed_episode_count": 0,
+        "prior_fulfilled_history_preserved": true,
+        "reversal_evidence_count": 1,
+        "collection_lifecycle": "active",
+        "source_outstanding_minor_units": 5900,
+        "backlog_sends": 0,
+        "actual_provider_submissions": 0
+      }
+    },
+    {
+      "id": "promise_reversal_insufficient_residual_before_cutoff",
+      "domain": "promise",
+      "requirements": [
+        "AC-09",
+        "AC-11",
+        "AT-10",
+        "AT-11"
+      ],
+      "input": {
+        "confirmed_at": "2026-11-17T00:00:00Z",
+        "cutoff": "2026-11-20T13:00:00Z",
+        "currency": "AUD",
+        "invoice": "I101",
+        "promise_id": "PR1",
+        "amount_minor_units": 4000,
+        "invoice_original_minor_units": 10000,
+        "prior_status": "FULFILLED",
+        "source_fresh": true,
+        "source_evidence_unambiguous": true,
+        "prior_other_holds": [
+          "active_dispute"
+        ],
+        "source_financial_status": "partially_paid",
+        "as_of": "2026-11-20T12:00:00Z",
+        "source_outstanding_minor_units": 6001,
+        "allocations": [
+          {
+            "id": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-19T00:00:00Z",
+            "minor_units": 5000,
+            "source_verified": true,
+            "used_by_other_promise": false
+          }
+        ],
+        "reversals": [
+          {
+            "id": "R1",
+            "allocation": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-20T11:59:59Z",
+            "minor_units": 1001,
+            "source_verified": true
+          }
+        ]
+      },
+      "expected": {
+        "status": "ACTIVE",
+        "timely_performance_minor_units": 3999,
+        "verification_status": "VERIFIED",
+        "promise_hold_active": true,
+        "hold_reasons": [
+          "active_dispute",
+          "active_promise"
+        ],
+        "new_missed_episode_count": 0,
+        "prior_fulfilled_history_preserved": true,
+        "reversal_evidence_count": 1,
+        "collection_lifecycle": "active",
+        "source_outstanding_minor_units": 6001,
+        "backlog_sends": 0,
+        "actual_provider_submissions": 0
+      }
+    },
+    {
+      "id": "promise_reversal_exact_residual_after_cutoff",
+      "domain": "promise",
+      "requirements": [
+        "AC-09",
+        "AC-11",
+        "AT-10",
+        "AT-11"
+      ],
+      "input": {
+        "confirmed_at": "2026-11-17T00:00:00Z",
+        "cutoff": "2026-11-20T13:00:00Z",
+        "currency": "AUD",
+        "invoice": "I101",
+        "promise_id": "PR1",
+        "amount_minor_units": 4000,
+        "invoice_original_minor_units": 10000,
+        "prior_status": "FULFILLED",
+        "source_fresh": true,
+        "source_evidence_unambiguous": true,
+        "prior_other_holds": [
+          "active_dispute"
+        ],
+        "source_financial_status": "partially_paid",
+        "as_of": "2026-11-20T14:00:00Z",
+        "source_outstanding_minor_units": 6000,
+        "allocations": [
+          {
+            "id": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-19T00:00:00Z",
+            "minor_units": 5000,
+            "source_verified": true,
+            "used_by_other_promise": false
+          }
+        ],
+        "reversals": [
+          {
+            "id": "R1",
+            "allocation": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-20T13:30:00Z",
+            "minor_units": 1000,
+            "source_verified": true
+          }
+        ]
+      },
+      "expected": {
+        "status": "FULFILLED",
+        "timely_performance_minor_units": 4000,
+        "verification_status": "VERIFIED",
+        "promise_hold_active": false,
+        "hold_reasons": [
+          "active_dispute"
+        ],
+        "new_missed_episode_count": 0,
+        "prior_fulfilled_history_preserved": true,
+        "reversal_evidence_count": 1,
+        "collection_lifecycle": "active",
+        "source_outstanding_minor_units": 6000,
+        "backlog_sends": 0,
+        "actual_provider_submissions": 0
+      }
+    },
+    {
+      "id": "promise_reversal_excess_residual_after_cutoff",
+      "domain": "promise",
+      "requirements": [
+        "AC-09",
+        "AC-11",
+        "AT-10",
+        "AT-11"
+      ],
+      "input": {
+        "confirmed_at": "2026-11-17T00:00:00Z",
+        "cutoff": "2026-11-20T13:00:00Z",
+        "currency": "AUD",
+        "invoice": "I101",
+        "promise_id": "PR1",
+        "amount_minor_units": 4000,
+        "invoice_original_minor_units": 10000,
+        "prior_status": "FULFILLED",
+        "source_fresh": true,
+        "source_evidence_unambiguous": true,
+        "prior_other_holds": [
+          "active_dispute"
+        ],
+        "source_financial_status": "partially_paid",
+        "as_of": "2026-11-20T14:00:00Z",
+        "source_outstanding_minor_units": 5900,
+        "allocations": [
+          {
+            "id": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-19T00:00:00Z",
+            "minor_units": 5000,
+            "source_verified": true,
+            "used_by_other_promise": false
+          }
+        ],
+        "reversals": [
+          {
+            "id": "R1",
+            "allocation": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-20T13:30:00Z",
+            "minor_units": 900,
+            "source_verified": true
+          }
+        ]
+      },
+      "expected": {
+        "status": "FULFILLED",
+        "timely_performance_minor_units": 4100,
+        "verification_status": "VERIFIED",
+        "promise_hold_active": false,
+        "hold_reasons": [
+          "active_dispute"
+        ],
+        "new_missed_episode_count": 0,
+        "prior_fulfilled_history_preserved": true,
+        "reversal_evidence_count": 1,
+        "collection_lifecycle": "active",
+        "source_outstanding_minor_units": 5900,
+        "backlog_sends": 0,
+        "actual_provider_submissions": 0
+      }
+    },
+    {
+      "id": "promise_reversal_insufficient_residual_after_cutoff",
+      "domain": "promise",
+      "requirements": [
+        "AC-09",
+        "AC-11",
+        "AT-10",
+        "AT-11"
+      ],
+      "input": {
+        "confirmed_at": "2026-11-17T00:00:00Z",
+        "cutoff": "2026-11-20T13:00:00Z",
+        "currency": "AUD",
+        "invoice": "I101",
+        "promise_id": "PR1",
+        "amount_minor_units": 4000,
+        "invoice_original_minor_units": 10000,
+        "prior_status": "FULFILLED",
+        "source_fresh": true,
+        "source_evidence_unambiguous": true,
+        "prior_other_holds": [
+          "active_dispute"
+        ],
+        "source_financial_status": "partially_paid",
+        "as_of": "2026-11-20T14:00:00Z",
+        "source_outstanding_minor_units": 6001,
+        "allocations": [
+          {
+            "id": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-19T00:00:00Z",
+            "minor_units": 5000,
+            "source_verified": true,
+            "used_by_other_promise": false
+          }
+        ],
+        "reversals": [
+          {
+            "id": "R1",
+            "allocation": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-20T13:30:00Z",
+            "minor_units": 1001,
+            "source_verified": true
+          }
+        ]
+      },
+      "expected": {
+        "status": "MISSED",
+        "timely_performance_minor_units": 3999,
+        "verification_status": "VERIFIED",
+        "promise_hold_active": false,
+        "hold_reasons": [
+          "active_dispute"
+        ],
+        "new_missed_episode_count": 1,
+        "prior_fulfilled_history_preserved": true,
+        "reversal_evidence_count": 1,
+        "collection_lifecycle": "active",
+        "source_outstanding_minor_units": 6001,
+        "backlog_sends": 0,
+        "actual_provider_submissions": 0
+      }
+    },
+    {
+      "id": "promise_reversal_stale_retains_verification_hold",
+      "domain": "promise",
+      "requirements": [
+        "AC-09",
+        "AC-11",
+        "AT-10",
+        "AT-11"
+      ],
+      "input": {
+        "confirmed_at": "2026-11-17T00:00:00Z",
+        "cutoff": "2026-11-20T13:00:00Z",
+        "currency": "AUD",
+        "invoice": "I101",
+        "promise_id": "PR1",
+        "amount_minor_units": 4000,
+        "invoice_original_minor_units": 10000,
+        "prior_status": "FULFILLED",
+        "source_fresh": false,
+        "source_evidence_unambiguous": true,
+        "prior_other_holds": [
+          "active_dispute"
+        ],
+        "source_financial_status": "partially_paid",
+        "as_of": "2026-11-20T14:00:00Z",
+        "source_outstanding_minor_units": 6000,
+        "allocations": [
+          {
+            "id": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-19T00:00:00Z",
+            "minor_units": 5000,
+            "source_verified": true,
+            "used_by_other_promise": false
+          }
+        ],
+        "reversals": [
+          {
+            "id": "R1",
+            "allocation": "A1",
+            "currency": "AUD",
+            "effective_at": "2026-11-20T13:30:00Z",
+            "minor_units": 1000,
+            "source_verified": true
+          }
+        ]
+      },
+      "expected": {
+        "status": "FULFILLED",
+        "status_changed": false,
+        "current_verification_result": null,
+        "timely_performance_minor_units": null,
+        "verification_status": "PENDING_REVIEW",
+        "promise_hold_active": true,
+        "hold_reasons": [
+          "active_dispute",
+          "promise_verification"
+        ],
+        "new_missed_episode_count": 0,
+        "prior_fulfilled_history_preserved": true,
+        "reversal_evidence_count": 1,
+        "review_task_required": true,
+        "collection_lifecycle": "active",
+        "backlog_sends": 0,
+        "actual_provider_submissions": 0
+      }
+    },
+    {
+      "id": "promise_reversal_ambiguous_allocation_retains_verification_hold",
+      "domain": "promise",
+      "requirements": [
+        "AC-09",
+        "AC-11",
+        "AT-10",
+        "AT-11"
+      ],
+      "input": {
+        "confirmed_at": "2026-11-17T00:00:00Z",
+        "cutoff": "2026-11-20T13:00:00Z",
+        "currency": "AUD",
+        "invoice": "I101",
+        "promise_id": "PR1",
+        "amount_minor_units": 4000,
+        "invoice_original_minor_units": 10000,
+        "prior_status": "FULFILLED",
+        "source_fresh": true,
+        "source_evidence_unambiguous": false,
+        "prior_other_holds": [
+          "active_dispute"
+        ],
+        "source_financial_status": "partially_paid",
+        "as_of": "2026-11-20T14:00:00Z",
+        "source_outstanding_minor_units": 6000,
+        "allocations": [
+          {
+            "id": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-19T00:00:00Z",
+            "minor_units": 5000,
+            "source_verified": true,
+            "used_by_other_promise": false
+          }
+        ],
+        "reversals": [
+          {
+            "id": "R1",
+            "allocation": null,
+            "currency": "AUD",
+            "effective_at": "2026-11-20T13:30:00Z",
+            "minor_units": 1000,
+            "source_verified": true
+          }
+        ]
+      },
+      "expected": {
+        "status": "FULFILLED",
+        "status_changed": false,
+        "current_verification_result": null,
+        "timely_performance_minor_units": null,
+        "verification_status": "PENDING_REVIEW",
+        "promise_hold_active": true,
+        "hold_reasons": [
+          "active_dispute",
+          "promise_verification"
+        ],
+        "new_missed_episode_count": 0,
+        "prior_fulfilled_history_preserved": true,
+        "reversal_evidence_count": 1,
+        "review_task_required": true,
+        "collection_lifecycle": "active",
+        "backlog_sends": 0,
+        "actual_provider_submissions": 0
+      }
+    },
+    {
+      "id": "promise_reversal_excludes_wrong_invoice_cash",
+      "domain": "promise",
+      "requirements": [
+        "AC-09",
+        "AC-11",
+        "AT-10",
+        "AT-11"
+      ],
+      "input": {
+        "confirmed_at": "2026-11-17T00:00:00Z",
+        "cutoff": "2026-11-20T13:00:00Z",
+        "currency": "AUD",
+        "invoice": "I101",
+        "promise_id": "PR1",
+        "amount_minor_units": 4000,
+        "invoice_original_minor_units": 10000,
+        "prior_status": "FULFILLED",
+        "source_fresh": true,
+        "source_evidence_unambiguous": true,
+        "prior_other_holds": [
+          "active_dispute"
+        ],
+        "source_financial_status": "partially_paid",
+        "as_of": "2026-11-20T14:00:00Z",
+        "source_outstanding_minor_units": 7000,
+        "allocations": [
+          {
+            "id": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-19T00:00:00Z",
+            "minor_units": 5000,
+            "source_verified": true,
+            "used_by_other_promise": false
+          },
+          {
+            "id": "A2",
+            "invoice": "I102",
+            "currency": "AUD",
+            "effective_at": "2026-11-19T01:00:00Z",
+            "minor_units": 2000,
+            "source_verified": true,
+            "used_by_other_promise": false
+          }
+        ],
+        "reversals": [
+          {
+            "id": "R1",
+            "allocation": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-20T13:30:00Z",
+            "minor_units": 2000,
+            "source_verified": true
+          }
+        ]
+      },
+      "expected": {
+        "status": "MISSED",
+        "timely_performance_minor_units": 3000,
+        "excluded_allocation_ids": [
+          "A2"
+        ],
+        "verification_status": "VERIFIED",
+        "new_missed_episode_count": 1,
+        "prior_fulfilled_history_preserved": true,
+        "reversal_evidence_count": 1,
+        "collection_lifecycle": "active",
+        "source_outstanding_minor_units": 7000,
+        "hold_reasons": [
+          "active_dispute"
+        ],
+        "backlog_sends": 0,
+        "actual_provider_submissions": 0
+      }
+    },
+    {
+      "id": "promise_reversal_currency_ambiguity_retains_review_hold",
+      "domain": "promise",
+      "requirements": [
+        "AC-09",
+        "AC-11",
+        "AT-10",
+        "AT-11"
+      ],
+      "input": {
+        "confirmed_at": "2026-11-17T00:00:00Z",
+        "cutoff": "2026-11-20T13:00:00Z",
+        "currency": "AUD",
+        "invoice": "I101",
+        "promise_id": "PR1",
+        "amount_minor_units": 4000,
+        "invoice_original_minor_units": 10000,
+        "prior_status": "FULFILLED",
+        "source_fresh": true,
+        "source_evidence_unambiguous": false,
+        "prior_other_holds": [
+          "active_dispute"
+        ],
+        "source_financial_status": "partially_paid",
+        "as_of": "2026-11-20T14:00:00Z",
+        "source_outstanding_minor_units": 7000,
+        "allocations": [
+          {
+            "id": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-19T00:00:00Z",
+            "minor_units": 5000,
+            "source_verified": true,
+            "used_by_other_promise": false
+          },
+          {
+            "id": "A2",
+            "invoice": "I101",
+            "currency": "USD",
+            "effective_at": "2026-11-19T01:00:00Z",
+            "minor_units": 2000,
+            "source_verified": false,
+            "used_by_other_promise": false,
+            "candidate_only": true
+          }
+        ],
+        "reversals": [
+          {
+            "id": "R1",
+            "allocation": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-20T13:30:00Z",
+            "minor_units": 2000,
+            "source_verified": true
+          }
+        ],
+        "currency_conflict_detected": true
+      },
+      "expected": {
+        "status": "FULFILLED",
+        "status_changed": false,
+        "current_verification_result": null,
+        "timely_performance_minor_units": null,
+        "verification_status": "PENDING_REVIEW",
+        "promise_hold_active": true,
+        "hold_reasons": [
+          "active_dispute",
+          "promise_verification"
+        ],
+        "new_missed_episode_count": 0,
+        "prior_fulfilled_history_preserved": true,
+        "reversal_evidence_count": 1,
+        "invalid_currency_candidate_rejected": true,
+        "review_task_required": true,
+        "collection_lifecycle": "active",
+        "backlog_sends": 0,
+        "actual_provider_submissions": 0
+      }
+    },
+    {
+      "id": "promise_reversal_excludes_already_reused_cash",
+      "domain": "promise",
+      "requirements": [
+        "AC-09",
+        "AC-11",
+        "AT-10",
+        "AT-11"
+      ],
+      "input": {
+        "confirmed_at": "2026-11-17T00:00:00Z",
+        "cutoff": "2026-11-20T13:00:00Z",
+        "currency": "AUD",
+        "invoice": "I101",
+        "promise_id": "PR1",
+        "amount_minor_units": 4000,
+        "invoice_original_minor_units": 10000,
+        "prior_status": "FULFILLED",
+        "source_fresh": true,
+        "source_evidence_unambiguous": true,
+        "prior_other_holds": [
+          "active_dispute"
+        ],
+        "source_financial_status": "partially_paid",
+        "as_of": "2026-11-20T14:00:00Z",
+        "source_outstanding_minor_units": 5000,
+        "allocations": [
+          {
+            "id": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-19T00:00:00Z",
+            "minor_units": 5000,
+            "source_verified": true,
+            "used_by_other_promise": false
+          },
+          {
+            "id": "A2",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-19T01:00:00Z",
+            "minor_units": 2000,
+            "source_verified": true,
+            "used_by_other_promise": true
+          }
+        ],
+        "reversals": [
+          {
+            "id": "R1",
+            "allocation": "A1",
+            "invoice": "I101",
+            "currency": "AUD",
+            "effective_at": "2026-11-20T13:30:00Z",
+            "minor_units": 2000,
+            "source_verified": true
+          }
+        ]
+      },
+      "expected": {
+        "status": "MISSED",
+        "timely_performance_minor_units": 3000,
+        "excluded_allocation_ids": [
+          "A2"
+        ],
+        "verification_status": "VERIFIED",
+        "new_missed_episode_count": 1,
+        "prior_fulfilled_history_preserved": true,
+        "reversal_evidence_count": 1,
+        "collection_lifecycle": "active",
+        "source_outstanding_minor_units": 5000,
+        "hold_reasons": [
+          "active_dispute"
+        ],
+        "backlog_sends": 0,
+        "actual_provider_submissions": 0
+      }
+    }
+  ]
+}

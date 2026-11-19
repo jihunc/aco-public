@@ -1,0 +1,13 @@
+{
+  "synthetic": true,
+  "cases": [
+    {"name":"aud_zero", "minor":0, "currency":"AUD", "exponent":2, "status":"credited", "accepted":true},
+    {"name":"aud_negative_credit", "minor":-500, "currency":"AUD", "exponent":2, "status":"credited", "accepted":true},
+    {"name":"jpy_no_fraction", "minor":123, "currency":"JPY", "exponent":0, "status":"open", "accepted":true},
+    {"name":"kwd_three_places", "minor":12345, "currency":"KWD", "exponent":3, "status":"open", "accepted":true},
+    {"name":"aud_wrong_exponent", "minor":100, "currency":"AUD", "exponent":0, "status":"open", "accepted":false},
+    {"name":"unknown_currency", "minor":100, "currency":"ZZZ", "exponent":2, "status":"open", "accepted":false},
+    {"name":"float_minor", "minor":1.2, "currency":"AUD", "exponent":2, "status":"open", "accepted":false},
+    {"name":"string_minor", "minor":"100", "currency":"AUD", "exponent":2, "status":"open", "accepted":false}
+  ]
+}

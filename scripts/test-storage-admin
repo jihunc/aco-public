@@ -1,0 +1,17 @@
+#!/bin/sh
+# Explicit privileged local control-plane verification, never the default lane.
+set -eu
+cd "$(dirname "$0")/.."
+if [ "$(uname -s)" != Darwin ] || [ ! -x /usr/bin/sandbox-exec ]; then
+    echo 'Storage-admin tests require the verified macOS native sandbox.' >&2
+    exit 2
+fi
+aco_docker_socket="$HOME/.docker/run/docker.sock"
+if [ ! -S "$aco_docker_socket" ]; then
+    echo 'Storage-admin lane requires the explicit local Docker Desktop Unix socket.' >&2
+    exit 2
+fi
+unset DOCKER_CONTEXT PYTEST_ADDOPTS PYTEST_PLUGINS
+export DOCKER_HOST="unix://$aco_docker_socket"
+exec /usr/bin/sandbox-exec -D "DOCKER_SOCKET=$aco_docker_socket" -f scripts/storage-admin-macos.sb \
+    .venv/bin/python scripts/storage_admin_tests.py "$@"

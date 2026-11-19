@@ -1,0 +1,11 @@
+{
+  "approval_ref": "REPLACE_WITH_ACTUAL_RETENTION_AUTHORITY",
+  "jurisdiction": "REPLACE_WITH_REVIEWED_JURISDICTION",
+  "subject": "REPLACE_WITH_APPROVED_TEST_SUBJECT",
+  "purpose": "REPLACE_WITH_APPROVED_CAPTURE_PURPOSE",
+  "reviewer_id": "00000000-0000-0000-0000-000000000000",
+  "approved_at": "2000-01-01T00:00:00Z",
+  "effective_until": "2000-01-01T01:00:00Z",
+  "retention_days": 1,
+  "max_bytes": 1048576
+}

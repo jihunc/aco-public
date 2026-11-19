@@ -1,0 +1,16 @@
+{
+  "name": "aco-workspace",
+  "private": true,
+  "packageManager": "pnpm@10.30.3",
+  "scripts": {
+    "dev:web": "pnpm --filter @aco/web dev",
+    "build": "pnpm --filter @aco/web build",
+    "lint": "pnpm --filter @aco/web lint",
+    "typecheck": "tsc --noEmit && pnpm --filter @aco/web typecheck"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "typescript": "6.0.3",
+    "@types/node": "^22.0.0"
+  }
+}

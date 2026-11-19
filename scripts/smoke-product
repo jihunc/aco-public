@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+if [ "$(uname -s)" != Darwin ] || [ ! -x /usr/bin/sandbox-exec ]; then
+    echo 'Product browser rehearsal requires the supplied macOS kernel policy.' >&2
+    exit 2
+fi
+exec /usr/bin/sandbox-exec -f infra/testing/product-smoke-macos.sb node scripts/smoke-product.mjs "$@"

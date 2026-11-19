@@ -1,0 +1,120 @@
+#!/bin/sh
+# Dependencies are installed separately. Executable checks inherit kernel deny-egress.
+set -eu
+cd "$(dirname "$0")/.."
+contained=false
+if [ "${1:-}" = --contained ]; then contained=true; shift; fi
+if [ "$#" -gt 1 ]; then echo 'Usage: scripts/fast-checks [all|python|web]' >&2; exit 2; fi
+lane=${1:-all}
+case "$lane" in all|python|web) ;; *) echo 'Usage: scripts/fast-checks [all|python|web]' >&2; exit 2 ;; esac
+if [ "$contained" = false ]; then
+    case "$(uname -s)" in
+        Darwin)
+            exec /usr/bin/sandbox-exec -f scripts/offline-macos.sb env -i \
+                PATH="$PATH" HOME="$HOME" NEXT_TELEMETRY_DISABLED=1 \
+                ACO_TEST_DATABASE_URL="${ACO_TEST_DATABASE_URL:-}" \
+                /bin/sh scripts/fast-checks --contained "$lane"
+            ;;
+        Linux)
+            # No external interfaces. Only this trusted bootstrap retains NET_ADMIN.
+            exec sudo env -i PATH="$PATH" HOME="$HOME" \
+                unshare --net --mount --pid --fork --mount-proc /bin/sh -eu -c '
+                    mount --make-rprivate /
+                    # Hide host daemon sockets even when runner primary group is docker.
+                    mount -t tmpfs -o mode=755,size=1m tmpfs /run
+                    ip link set lo up
+                    iptables -t raw -A OUTPUT -d 127.0.0.11 -j DROP
+                    iptables -P OUTPUT DROP
+                    iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+                    iptables -A OUTPUT -p tcp -d 127.0.0.1 -m multiport --dports 55432,53000,58000 -j ACCEPT
+                    iptables -A OUTPUT -j REJECT --reject-with icmp-admin-prohibited
+                    ip6tables -P OUTPUT DROP
+                    ip6tables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+                    ip6tables -A OUTPUT -p tcp -d ::1 -m multiport --dports 53000,58000 -j ACCEPT
+                    ip6tables -A OUTPUT -j REJECT --reject-with icmp6-adm-prohibited
+                    exec setpriv --reuid="$2" --regid="$3" --clear-groups \
+                        --bounding-set=-all --inh-caps=-all --ambient-caps=-all \
+                        --no-new-privs /bin/sh scripts/fast-checks --contained "$1"
+                ' fast-checks "$lane" "$(id -u)" "$(id -g)"
+            ;;
+        *) echo 'No verified offline kernel policy for this platform.' >&2; exit 2 ;;
+    esac
+fi
+# The internal entry independently proves the existing inherited kernel policy.
+.venv/bin/python -c 'import runpy; runpy.run_path("tests/conftest.py")'
+export NEXT_TELEMETRY_DISABLED=1
+if [ "$lane" = all ] || [ "$lane" = python ]; then
+    # Preserve the established full static scope, including scripts and migrations.
+    scope='src tests scripts/prepare-ci.py scripts/portable_manifest.py scripts/check_spec.py scripts/verify_live.py scripts/serve-health.py scripts/local_runtime.py scripts/agent_live_runtime.py scripts/run-worker.py scripts/test-portable scripts/migrate.py scripts/setup-local-identity.py scripts/seed-demo.py scripts/prepare-product.py scripts/product-compose.py scripts/dev.py scripts/check-campaign-mount.py alembic'
+    # Intentional splitting of a fixed audited file list, never caller input.
+    .venv/bin/ruff check $scope
+    .venv/bin/mypy $scope
+    .venv/bin/python - <<'PYSCAN'
+from pathlib import Path
+from aco.core.secret_scan import scan_tracked_secrets
+
+findings = scan_tracked_secrets(Path.cwd())
+for finding in findings:
+    print(f"{finding.path}:{finding.line}: {finding.kind}")
+raise SystemExit(1 if findings else 0)
+PYSCAN
+    if [ "$(uname -s)" = Linux ]; then
+        pg_bin=''
+        for candidate in /usr/lib/postgresql/*/bin; do
+            if [ -x "$candidate/initdb" ]; then pg_bin=$candidate; fi
+        done
+        if [ -z "$pg_bin" ]; then echo 'Install PostgreSQL server binaries first.' >&2; exit 2; fi
+        pg_root=$(mktemp -d /tmp/aco-fast-pg.XXXXXXXX)
+        cleanup() {
+            "$pg_bin/pg_ctl" -D "$pg_root/data" -m immediate -w stop >/dev/null 2>&1 || true
+            rm -rf -- "$pg_root"
+        }
+        trap cleanup EXIT
+        trap 'exit 130' INT
+        trap 'exit 143' TERM
+        "$pg_bin/initdb" -D "$pg_root/data" -U aco --auth=trust --no-locale --encoding=UTF8 >/dev/null
+        "$pg_bin/pg_ctl" -D "$pg_root/data" -l "$pg_root/server.log" \
+            -o "-h 127.0.0.1 -p 55432 -k $pg_root" -w start >/dev/null
+        "$pg_bin/createdb" -h 127.0.0.1 -p 55432 -U aco aco
+        export ACO_TEST_DATABASE_URL='postgresql+psycopg://aco@127.0.0.1:55432/aco'
+        # Guarded provider composition needs typed storage metadata, not a running
+        # S3 service. These fresh fixture-only credentials authorize no provider;
+        # the unchanged firewall also refuses any attempted storage/provider wire.
+        export ACO_TEST_STORAGE_ENDPOINT='http://127.0.0.1:59000'
+        export ACO_TEST_STORAGE_BUCKET='aco-ci-artifacts'
+        ACO_TEST_STORAGE_APP_ACCESS_KEY=$(.venv/bin/python -c 'import secrets;print(secrets.token_hex(16))')
+        ACO_TEST_STORAGE_APP_SECRET_KEY=$(.venv/bin/python -c 'import secrets;print(secrets.token_hex(32))')
+        export ACO_TEST_STORAGE_APP_ACCESS_KEY ACO_TEST_STORAGE_APP_SECRET_KEY
+    fi
+    # S3 and durable-mailbox storage contracts, browsers and broad DB/impact/evaluation suites stay in Full Regression.
+    .venv/bin/python -m pytest tests/unit tests/component tests/contracts tests/process \
+        --ignore=tests/contracts/test_storage_port.py \
+        --ignore=tests/contracts/test_demo_email_port.py \
+        tests/integration/test_combined_provider_startup.py \
+        tests/integration/test_live_tenant_ceiling.py \
+        tests/integration/test_agent_multi_live_offline.py \
+        tests/integration/test_agent_live_runtime_grant.py \
+        tests/integration/test_email_live_grant.py \
+        tests/integration/test_voice_live_grant.py \
+        tests/integration/test_identity_tenancy.py::test_real_identity_maps_only_authorized_membership \
+        tests/integration/test_identity_tenancy.py::test_complete_role_matrix_and_settings_guard \
+        tests/integration/test_identity_tenancy.py::test_roles_cannot_elevate_via_body_or_query \
+        tests/integration/test_identity_tenancy.py::test_csrf_and_session_expiry \
+        tests/integration/test_identity_tenancy.py::test_stale_context_cannot_reuse_removed_owner_authority \
+        tests/integration/test_approval_scope.py::test_boundary_approval_expiry_scope_and_self_approval \
+        tests/integration/test_approval_scope.py::test_approval_current_material_and_authority_changes_invalidate \
+        tests/integration/test_approval_scope.py::test_approval_foreign_workspace_and_generic_service_context_are_refused \
+        tests/integration/test_approval_independent_review.py::test_decision_is_immutable_and_consumed_approval_cannot_be_reused \
+        tests/integration/test_accounting_integrity.py::test_financial_fields_have_no_user_or_tool_write_surface \
+        tests/integration/test_accounting_integrity.py::test_snapshot_correction_preserves_history \
+        -q
+fi
+if [ "$lane" = all ] || [ "$lane" = web ]; then
+    node web/scripts/generate-api.mjs --check
+    node_modules/.bin/tsc --noEmit
+    node_modules/.bin/tsc --project web/tsconfig.json --noEmit
+    (cd web && node_modules/.bin/eslint .)
+    (cd web && node node_modules/next/dist/bin/next build --webpack)
+    node --test tests/component/usage-render.test.mjs
+    node --test web/tests/*.test.mjs tests/voice_live_web_fixture.test.mjs
+fi

@@ -1,0 +1,35 @@
+# Provider configuration overlay on the SAME complete product stack in every selection.
+x-development-backend: &development-backend
+  user: "${DEV_UID:?Required local operator UID}:${DEV_GID:?Required local operator GID}"
+  build:
+    args:
+      ACO_SOURCE_COMMIT: ${DEV_SOURCE_COMMIT:-}
+  env_file:
+    - ${DEV_BACKEND_ENV:?Required generated private backend environment}
+  volumes:
+    - type: bind
+      source: ${DEV_PROVIDER_DIRECTORY:?Required private provider directory}
+      target: /run/aco/providers
+      read_only: true
+      bind: {create_host_path: false}
+    - type: bind
+      source: ${DEV_CAMPAIGN_DIRECTORY:?Required canonical campaign directory}
+      target: /var/lib/aco/live
+      bind: {create_host_path: false}
+  networks: [default, provider-outbound]
+  environment: &development-environment
+    OUTBOUND_ENABLED: ${OUTBOUND_ENABLED:-false}
+    AUTOMATION_KILL_SWITCH: ${AUTOMATION_KILL_SWITCH:-true}
+    SYNTHETIC_EMAIL_ENABLED: ${SYNTHETIC_EMAIL_ENABLED:-false}
+    SYNTHETIC_EMAIL_INGRESS_ENABLED: ${SYNTHETIC_EMAIL_INGRESS_ENABLED:-false}
+    SYNTHETIC_VOICE_ENABLED: ${SYNTHETIC_VOICE_ENABLED:-false}
+
+services:
+  api:
+    <<: *development-backend
+  worker:
+    <<: *development-backend
+
+networks:
+  provider-outbound:
+    internal: ${DEV_PROVIDER_NETWORK_INTERNAL:-true}

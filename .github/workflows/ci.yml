@@ -1,0 +1,55 @@
+name: Fast CI
+on: [push, pull_request]
+permissions:
+  contents: read
+concurrency:
+  group: fast-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  checks:
+    name: ${{ matrix.lane }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: [python, web]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22.18.0'
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: '0.13.8'
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        if: matrix.lane == 'web'
+        with:
+          version: '10.30.3'
+      - name: Locate pnpm store
+        if: matrix.lane == 'web'
+        run: echo "PNPM_STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        if: matrix.lane == 'web'
+        with:
+          path: ${{ env.PNPM_STORE_PATH }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: Install locked Python dependencies (setup network only)
+        run: uv sync --frozen
+      - name: Install locked web dependencies (setup network only)
+        if: matrix.lane == 'web'
+        run: pnpm install --frozen-lockfile
+      - name: Install kernel boundary tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends iptables iproute2 util-linux
+      - name: Install local PostgreSQL server
+        if: matrix.lane == 'python'
+        run: sudo apt-get install -y --no-install-recommends postgresql-16
+      - name: Run fixed fast lane in isolated network namespace
+        run: scripts/fast-checks "${{ matrix.lane }}"

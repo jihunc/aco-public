@@ -1,0 +1,105 @@
+{
+  "realm": "aco",
+  "enabled": true,
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": true,
+  "clients": [
+    {
+      "clientId": "aco",
+      "secret": "${ACO_OIDC_CLIENT_SECRET}",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "serviceAccountsEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "http://localhost:8000/api/auth/callback",
+        "http://localhost:3000/api/auth/callback",
+        "http://127.0.0.1:53000/api/auth/callback"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://127.0.0.1:53000"
+      ],
+      "protocolMappers": [
+        {
+          "name": "aco-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "aco",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "owner@example.test",
+      "email": "owner@example.test",
+      "emailVerified": true,
+      "firstName": "Demo",
+      "lastName": "Owner",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${ACO_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "finance@example.test",
+      "email": "finance@example.test",
+      "emailVerified": true,
+      "firstName": "Demo",
+      "lastName": "Finance",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${ACO_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "operator@example.test",
+      "email": "operator@example.test",
+      "emailVerified": true,
+      "firstName": "Demo",
+      "lastName": "Operator",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${ACO_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "viewer@example.test",
+      "email": "viewer@example.test",
+      "emailVerified": true,
+      "firstName": "Demo",
+      "lastName": "Viewer",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${ACO_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    }
+  ],
+  "revokeRefreshToken": true,
+  "refreshTokenMaxReuse": 0
+}

@@ -1,0 +1,11 @@
+{
+  "model_id": "REPLACE_WITH_VERIFIED_MODEL_ID",
+  "expires_at": "2000-01-01T00:00:00Z",
+  "price_source_at": "2000-01-01T00:00:00Z",
+  "input_usd_per_token": "0.000001",
+  "output_usd_per_token": "0.000001",
+  "max_requests": 3,
+  "max_input_tokens": 64000,
+  "max_output_tokens": 2048,
+  "amount": "1"
+}

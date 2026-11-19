@@ -1,0 +1,124 @@
+.impact-dashboard,
+.impact-dashboard .panel,
+.impact-dashboard .panel-grid > * {
+  min-width: 0;
+}
+.impact-dashboard p,
+.impact-dashboard li,
+.impact-dashboard dd,
+.impact-dashboard a {
+  overflow-wrap: anywhere;
+}
+.impact-net {
+  display: block;
+  font-size: 28px;
+  overflow-wrap: anywhere;
+}
+.impact-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.impact-table-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.impact-table-scroll th,
+.impact-table-scroll td {
+  text-align: left;
+  padding: 10px;
+  vertical-align: top;
+  border-bottom: 1px solid #dce5eb;
+  overflow-wrap: anywhere;
+}
+.impact-dashboard details {
+  margin-top: 14px;
+}
+.impact-dashboard dt {
+  font-weight: 600;
+  margin-top: 14px;
+}
+.cohort-sides {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+.cohort-side,
+.cohort-result,
+.cohort-captured {
+  min-width: 0;
+}
+.cohort-side {
+  padding: 18px;
+  border: 1px solid #dce5eb;
+  border-radius: 12px;
+}
+.cohort-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.cohort-metrics dd {
+  margin: 4px 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+.cohort-source-review,
+.cohort-captured {
+  margin: 20px 0;
+  padding: 16px;
+  border: 1px solid #dce5eb;
+  border-radius: 12px;
+}
+.cohort-source-review label {
+  display: block;
+  font-weight: 600;
+}
+.cohort-source-review textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 84px;
+  margin-top: 8px;
+}
+.cohort-panel button {
+  white-space: normal;
+  max-width: 100%;
+  margin: 4px 8px 4px 0;
+}
+@media (max-width: 900px) {
+  .cohort-sides {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .cohort-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cohort-side {
+    padding: 12px;
+  }
+}
+.case-outcome-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  margin: 18px 0;
+}
+.case-outcome-controls input {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.case-outcome-controls button {
+  justify-self: start;
+  max-width: 100%;
+  white-space: normal;
+}
+.case-outcome-list {
+  padding-left: 20px;
+}
+.case-outcome-record {
+  padding-bottom: 16px;
+  border-bottom: 1px solid #dce5eb;
+}

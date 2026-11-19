@@ -1,0 +1,18 @@
+server {
+    listen 8333;
+    server_name _;
+    access_log off;
+    error_log /dev/stderr crit;
+    client_max_body_size 0;
+
+    # Only the configured S3 bucket is exposed; control/UI/root paths fail closed.
+    location = /${S3_BUCKET} {
+        include /etc/nginx/s3-common.conf;
+    }
+    location ^~ /${S3_BUCKET}/ {
+        include /etc/nginx/s3-common.conf;
+    }
+    location / {
+        return 403;
+    }
+}

@@ -1,0 +1,56 @@
+#!/bin/sh
+# Disposable Linux control plane; test-portable retains the kernel-contained test gate.
+set -eu
+cd "$(dirname "$0")/.."
+if [ -n "${COMPOSE_PROJECT_NAME:-}${COMPOSE_FILE:-}${COMPOSE_ENV_FILES:-}${COMPOSE_PROFILES:-}${COMPOSE_DISABLE_ENV_FILE:-}${COMPOSE_PATH_SEPARATOR:-}" ]; then
+    echo 'Refusing inherited Compose selectors; use a fresh shell without overrides.' >&2
+    exit 2
+fi
+if [ "$#" -ne 0 ] || [ "$(uname -s)" != Linux ]; then
+    echo 'Usage: scripts/test-local-regression (Linux, fresh disposable checkout only)' >&2
+    exit 2
+fi
+existing_stack=$(docker ps --all --quiet --filter label=com.docker.compose.project=aco)
+if [ -n "$existing_stack" ]; then
+    echo 'Refusing to alter an existing native aco Compose stack.' >&2
+    exit 2
+fi
+existing_volumes=$(docker volume ls --quiet --filter label=com.docker.compose.project=aco)
+if [ -n "$existing_volumes" ]; then
+    echo 'Refusing to reuse retained native aco Compose volumes.' >&2
+    exit 2
+fi
+python3 scripts/prepare-ci.py
+cleanup() {
+    status=$?
+    trap - EXIT
+    if docker compose down; then
+        exit "$status"
+    else
+        cleanup_status=$?
+        if [ "$status" -ne 0 ]; then exit "$status"; fi
+        exit "$cleanup_status"
+    fi
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+docker compose config --quiet
+docker compose pull
+docker build --pull=false --build-arg ACO_SOURCE_COMMIT="$(git rev-parse HEAD)" -f infra/testing/Dockerfile -t aco-offline-t02:locked .
+# Pinned SeaweedFS drops to 1000:1000; preserve the generated policy's private mode.
+test -f .tooling/storage/s3-identities.json
+test ! -L .tooling/storage/s3-identities.json
+test "$(stat -c %u .tooling/storage/s3-identities.json)" = "$(id -u)"
+test "$(stat -c %a .tooling/storage/s3-identities.json)" = 600
+sudo chown --no-dereference 1000:1000 -- .tooling/storage/s3-identities.json
+test "$(stat -c %u:%g:%a .tooling/storage/s3-identities.json)" = 1000:1000:600
+if docker compose up --pull never --wait -d; then
+    :
+else
+    status=$?
+    python3 scripts/ci-storage-diagnostics.py || :
+    exit "$status"
+fi
+python3 tests/portable_source_probe.py
+scripts/test-portable

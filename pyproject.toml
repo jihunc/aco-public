@@ -1,0 +1,79 @@
+[project]
+name = "aco"
+version = "0.1.0"
+description = "Autonomous Collections Operator"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+  "alembic",
+  "anyio",
+  "authlib",
+  "boto3",
+  "cryptography",
+  "fastapi",
+  "httpx",
+  "httpx2",
+  "iso4217>=1.16.20260101",
+  "itsdangerous",
+  "joserfc",
+  "langgraph",
+  "langgraph-checkpoint-postgres",
+  "nh3",
+  "procrastinate",
+  "psycopg[binary,pool]",
+  "pydantic-ai-slim[openai]",
+  "pydantic-settings",
+  "python-dotenv",
+  "python-multipart",
+  "resend",
+  "sqlalchemy[asyncio]",
+  "svix",
+  "twilio",
+  "typer",
+  "uvicorn[standard]",
+]
+
+[dependency-groups]
+dev = [
+    "detect-secrets==1.5.0",
+    "markdown-it-py==4.3.0",
+    "mypy",
+    "playwright>=1.65.2",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-socket",
+    "respx",
+    "ruff",
+    "types-boto3[s3]",
+]
+
+[tool.uv]
+cache-dir = ".tooling/uv-cache"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aco"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+junit_family = "xunit1"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-ra --strict-markers -m 'not live_provider'"
+markers = ["live_provider: separately authorized actual provider traffic", "integration: local service integration"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+explicit_package_bases = true
+mypy_path = ["$MYPY_CONFIG_FILE_DIR/src", "$MYPY_CONFIG_FILE_DIR/tests"]
+strict = true
+ignore_missing_imports = true

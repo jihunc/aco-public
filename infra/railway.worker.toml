@@ -1,0 +1,9 @@
+# Same Python image/APP contract as API. Private worker; no HTTP domain or automatic migration.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "infra/api.Dockerfile"
+
+[deploy]
+startCommand = "python -m aco.worker"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

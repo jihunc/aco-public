@@ -1,0 +1,10 @@
+{
+  "synthetic": true,
+  "currency": "USD",
+  "cases": [
+    {"component":"provider_total", "amount":"0.000000000003", "quality":"PROVIDER_REPORTED", "bundle":"voice-call"},
+    {"component":"carrier", "amount":"0.000000000001", "quality":"PROVIDER_REPORTED", "bundle":"voice-call", "included_in":"provider_total"},
+    {"component":"transcription", "amount":null, "quality":"UNKNOWN", "bundle":"unresolved"},
+    {"component":"tts", "amount":"99999999999999999999999999.123456789012", "quality":"PROVIDER_REPORTED"}
+  ]
+}

@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+if [ "$(uname -s)" != Darwin ] || [ ! -x /usr/bin/sandbox-exec ]; then
+    echo 'Use scripts/test-portable for Linux E2E; uncontained browser execution is forbidden.' >&2
+    exit 2
+fi
+# Playwright owns FORCE_COLOR for child servers; remove its conflicting inherited
+# alias before Node/plugin startup. Other warnings remain enabled.
+unset NO_COLOR
+exec /usr/bin/sandbox-exec -f scripts/offline-macos.sb node node_modules/@playwright/test/cli.js "$@"

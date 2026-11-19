@@ -1,0 +1,29 @@
+{
+  "authorization_ref": "user-final-local-delivery-2026-11-19",
+  "source_commit": "0000000000000000000000000000000000000000",
+  "account_id": "REPLACE_WITH_VERIFIED_ACCOUNT_ID",
+  "assistant_id": "00000000-0000-0000-0000-000000000000",
+  "binding_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "participant_email": "approved-participant@example.test",
+  "participant_approval_ref": "REPLACE_WITH_ACTUAL_PARTICIPANT_APPROVAL",
+  "participant_timezone": "Australia/Melbourne",
+  "participant_mode": "LIVE_HUMAN_MICROPHONE_CAPTURE_OFF",
+  "no_capture_approval_ref": "REPLACE_WITH_VERIFIED_LAWFUL_NO_CAPTURE_APPROVAL",
+  "callback_url": "https://approved-callback.example.test/api/voice/callback",
+  "server_credential_id": "00000000-0000-0000-0000-000000000000",
+  "assistant_profile_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "policy_version_id": "00000000-0000-0000-0000-000000000000",
+  "invoice_ids": [
+    "00000000-0000-0000-0000-000000000000"
+  ],
+  "expires_at": "2000-01-01T00:00:00Z",
+  "max_calls": 1,
+  "max_call_seconds": 60,
+  "max_total_seconds": 60,
+  "max_requests": 6,
+  "max_usd": "1",
+  "all_component_usd_per_second": "0.01",
+  "api_request_usd_ceiling": "0.05",
+  "price_source_ref": "REPLACE_WITH_ACTUAL_ALL_COMPONENT_RATE_EVIDENCE",
+  "price_source_at": "2000-01-01T00:00:00Z"
+}

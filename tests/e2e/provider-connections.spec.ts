@@ -1,0 +1,64 @@
+import { expect, test } from "@playwright/test";
+import { randomUUID } from "node:crypto";
+
+test("Owner disconnects an LLM connection without losing persisted investigation history", async ({ page }) => {
+  test.setTimeout(120_000);
+  page.setDefaultTimeout(15000);
+  const password = process.env.ACO_TEST_DEMO_PASSWORD;
+  if (!password) throw Error("Explicit synthetic browser password required");
+  await page.goto("/login");
+  await page.getByRole("link", { name: "Sign in", exact: true }).click();
+  await page.getByRole("link", { name: "Register", exact: true }).click();
+  const email = `connections-${randomUUID()}@example.test`;
+  for (const [name, value] of [["Username", email], ["Email", email], ["First name", "Synthetic"],
+    ["Last name", "Lifecycle"], ["Password", password], ["Confirm password", password]])
+    await page.getByRole("textbox", { name, exact: true }).fill(value);
+  await page.getByRole("button", { name: "Register", exact: true }).click();
+  await expect(page).toHaveURL(/\/onboarding$/);
+  await page.getByLabel("Workspace name", { exact: true }).fill(`Lifecycle ${randomUUID()}`);
+  await page.getByLabel("Timezone", { exact: true }).fill("UTC");
+  const creating = page.waitForResponse(r => new URL(r.url()).pathname === "/api/workspaces" && r.request().method() === "POST");
+  await page.getByRole("button", { name: "Create demo workspace", exact: true }).click();
+  const created = await creating;
+  expect(created.status()).toBe(201);
+  const workspace = (await created.json()).id;
+  const base = `/api/workspaces/${workspace}`;
+  const seed = page.getByRole("region", { name: "Synthetic accounting setup", exact: true });
+  const importing = page.waitForResponse(r => new URL(r.url()).pathname === base + "/demo/accounting/seed" && r.request().method() === "POST");
+  await seed.getByRole("button", { name: "Import synthetic demo data", exact: true }).click();
+  expect((await importing).status()).toBe(201);
+  await expect(seed).toContainText("24 imported invoices · 6 imported customers", { timeout: 15000 });
+  await page.goto(`/agents?workspace=${workspace}`);
+  await page.getByLabel("Find invoices", { exact: true }).fill("INV-101");
+  await page.getByRole("button", { name: "Search invoices", exact: true }).click();
+  await page.getByLabel("Select INV-101", { exact: true }).check();
+  await page.getByLabel("Investigation objective").fill("Create an internal follow-up task from verified invoice evidence");
+  const starting = page.waitForResponse(r => new URL(r.url()).pathname === base + "/agent-runs" && r.request().method() === "POST");
+  await page.getByRole("button", { name: "Start investigation", exact: true }).click();
+  const started = await starting;
+  expect(started.status()).toBe(202);
+  const run = await started.json();
+  await expect.poll(async () => (await (await page.request.get(`${base}/agent-runs/${run.id}`)).json()).status,
+    { timeout: 45000 }).toBe("completed");
+  const before = await (await page.request.get(`${base}/agent-runs/${run.id}`)).json();
+  expect(before.execution).toBe("EXECUTED");
+  await page.goto(`/settings/email?workspace=${workspace}`);
+  const panel = page.getByRole("region", { name: "Company connections", exact: true });
+  const disconnecting = page.waitForResponse(r => r.url().endsWith("/disconnect") && r.request().method() === "POST");
+  await panel.getByRole("button", { name: "Disconnect mock from ACO", exact: true }).click();
+  const disconnected = await disconnecting;
+  expect(disconnected.status()).toBe(200);
+  expect((await disconnected.json()).remote_revocation).toBe("UNKNOWN");
+  await expect(panel).toContainText("Disconnected from ACO; history remains available.");
+  await page.reload();
+  await expect(panel).toContainText("Provider credential revocation: unknown.");
+  await expect(panel.getByRole("button", { name: "Disconnect mock from ACO", exact: true })).toHaveCount(0);
+  await page.goto(`/agent-runs/${run.id}?workspace=${workspace}`);
+  await expect(page.getByRole("heading", { name: "Findings & outcomes" })).toBeVisible();
+  await page.reload();
+  expect(await (await page.request.get(`${base}/agent-runs/${run.id}`)).json()).toEqual(before);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`/settings/email?workspace=${workspace}`);
+  await expect(panel).toContainText("Disconnected from ACO; history remains available.");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});

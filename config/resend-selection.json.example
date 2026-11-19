@@ -1,0 +1,14 @@
+{
+  "grant_id": "00000000-0000-0000-0000-000000000000",
+  "tenant_id": "00000000-0000-0000-0000-000000000000",
+  "connection_id": "00000000-0000-0000-0000-000000000000",
+  "authorization_ref": "user-final-local-delivery-2026-11-19",
+  "source_commit": "0000000000000000000000000000000000000000",
+  "credential_file": "/run/aco/providers/resend-credentials.json",
+  "credential_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "download_hosts": [],
+  "webhook_endpoint_id": null,
+  "kill_switch": true,
+  "campaign_file": "/var/lib/aco/live/live-delivery-2026-11-19.sqlite3",
+  "allocation_id": "00000000-0000-0000-0000-000000000000"
+}

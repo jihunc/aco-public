@@ -1,0 +1,19 @@
+{
+  "authorization_ref": "user-final-local-delivery-2026-11-19",
+  "source_commit": "0000000000000000000000000000000000000000",
+  "mode": "OUTBOUND_TEST_ONLY",
+  "sender": "onboarding@resend.dev",
+  "recipient": "approved-participant@example.test",
+  "reply_mailbox": null,
+  "provider_test_account_email": "approved-participant@example.test",
+  "participant_approval_ref": "REPLACE_WITH_ACTUAL_APPROVAL",
+  "sender_verification_ref": "REPLACE_WITH_PROVIDER_ACCOUNT_EVIDENCE",
+  "expires_at": "2000-01-01T00:00:00Z",
+  "max_requests": 6,
+  "max_messages": 1,
+  "max_received_messages": 0,
+  "max_usd": "1",
+  "request_usd_ceiling": "0.1",
+  "price_source_ref": "REPLACE_WITH_VERIFIED_CURRENT_RATE_BOUND",
+  "price_source_at": "2000-01-01T00:00:00Z"
+}
